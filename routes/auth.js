@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { validateAuth } = require('../middleware/validation');
 const { signUp, signIn, signOut, getCurrentUser } = require('../controllers/loginController');
 
 /**
@@ -32,7 +33,7 @@ const { signUp, signIn, signOut, getCurrentUser } = require('../controllers/logi
  *       400:
  *         description: Registration failed
  */
-router.post('/signup', signUp);
+router.post('/signup', validateAuth, signUp);
 
 /**
  * @swagger
@@ -60,7 +61,7 @@ router.post('/signup', signUp);
  *       401:
  *         description: Invalid credentials
  */
-router.post('/signin', signIn);
+router.post('/signin', validateAuth, signIn);
 
 /**
  * @swagger

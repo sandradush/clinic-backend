@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { validatePatient } = require('../middleware/validation');
 const {
   getAllPatients,
   getPatientById,
@@ -120,7 +121,7 @@ router.get('/:id', getPatientById);
  *             schema:
  *               $ref: '#/components/schemas/Patient'
  */
-router.post('/', createPatient);
+router.post('/', validatePatient, createPatient);
 
 /**
  * @swagger
@@ -146,7 +147,7 @@ router.post('/', createPatient);
  *       404:
  *         description: Patient not found
  */
-router.put('/:id', updatePatient);
+router.put('/:id', validatePatient, updatePatient);
 
 /**
  * @swagger
