@@ -1,6 +1,7 @@
 // controllers/loginController.js
 const rateLimit = require('express-rate-limit');
-const { supabase } = require('../config/supabaseClient');
+const supabase = require('../config/supabase');
+
 
 // Rate limiter for signup/signin
 const authLimiter = rateLimit({
@@ -28,19 +29,20 @@ exports.signUp = [authLimiter, async (req, res) => {
     console.log('Attempting signup for:', email);
 
     // Check if user already exists first
-    const { data: existingUser, error: checkError } = await supabase
-      .from('profiles')
-      .select('email')
-      .eq('email', email)
-      .maybeSingle();
+    // Skip this check to avoid profiles table error
+    // const { data: existingUser, error: checkError } = await supabase
+    //   .from('profiles')
+    //   .select('email')
+    //   .eq('email', email)
+    //   .maybeSingle();
 
-    if (checkError) {
-      console.error('Check user error:', checkError);
-    }
+    // if (checkError) {
+    //   console.error('Check user error:', checkError);
+    // }
 
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
+    // if (existingUser) {
+    //   return res.status(400).json({ error: 'User already exists' });
+    // }
 
     // Create user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({

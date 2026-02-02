@@ -2,12 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3001;
+const cors = require('cors');
 
-
+app.use(cors({
+  origin: 'http://localhost:3001', // or your frontend URL
+  credentials: true
+}));
 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -17,11 +20,6 @@ const generalLimiter = rateLimit({
 
 app.use(generalLimiter);
 
-
-// Middleware
-app.use(cors({
-  origin: 'http://localhost:3002'
-}));
 app.use(express.json());
 
 // Swagger configuration
@@ -51,6 +49,14 @@ const patientsRouter = require('./routes/patients');
 const doctorsRouter = require('./routes/doctors');
 const appointmentsRouter = require('./routes/appointments');
 const authRouter = require('./routes/auth');
+const logger = require('./config/logger');
+const { errorHandler, notFound } = require('./middleware/errorHandler');
+
+// Logging middleware
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`, { ip: req.ip, userAgent: req.get('User-Agent') });
+  next();
+});
 
 app.use('/api/patients', patientsRouter);
 app.use('/api/doctors', doctorsRouter);
@@ -99,6 +105,10 @@ app.get('/api/health', async (req, res) => {
     });
   }
 });
+
+// Error handling middleware (must be last)
+app.use(notFound);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
