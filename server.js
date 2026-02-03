@@ -9,10 +9,27 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+// Allow all origins and enable credentials (reflect origin)
+app.use(cors({ origin: true, credentials: true }));
+// Enable pre-flight for all routes
+app.options('*', cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 // Swagger configuration
+// Allow setting hosted URL(s) via env var `SERVER_URLS` or single `SERVER_URL`.
+// `SERVER_URLS` can be a comma-separated list (e.g. "https://api.prod.com,https://api.staging.com").
+const rawServerUrls = process.env.SERVER_URLS || process.env.SERVER_URL || `http://localhost:${PORT}`;
+const urlList = rawServerUrls.split(',').map(s => s.trim()).filter(Boolean);
+
+const swaggerServers = urlList.map((url) => {
+  let desc = 'Server';
+  if (process.env.SERVER_ENV_DESC) desc = process.env.SERVER_ENV_DESC;
+  else if (url.includes('localhost')) desc = 'Local server';
+  else if (process.env.NODE_ENV === 'production') desc = 'Production server';
+  else desc = 'Staging/Dev server';
+  return { url, description: desc };
+});
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -21,28 +38,50 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'API for clinic management system',
     },
-    servers: [
-      {
-        url: `http://localhost:${PORT}`,
-        description: 'Development server',
-      },
-    ],
+    servers: swaggerServers,
   },
   apis: ['./routes/*.js', './server.js'],
 };
 
-const specs = swaggerJsdoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+const specsTemplate = swaggerJsdoc(swaggerOptions);
+
+// Serve a dynamic swagger JSON that uses either SERVER_URL(S) env or the
+// actual host from the incoming request so the UI won't always show localhost.
+app.get('/api-docs.json', (req, res) => {
+  try {
+    const hostFromReq = `${req.protocol}://${req.get('host')}`;
+    const serverUrls = (process.env.SERVER_URLS || process.env.SERVER_URL)
+      ? (process.env.SERVER_URLS || process.env.SERVER_URL).split(',').map(s => s.trim()).filter(Boolean)
+      : [hostFromReq];
+
+    const servers = serverUrls.map(url => ({ url, description: url.includes('localhost') ? 'Local server' : 'Server' }));
+
+    const dynamicSpec = Object.assign({}, specsTemplate, { servers });
+    res.json(dynamicSpec);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, { swaggerUrl: '/api-docs.json' }));
 
 // Routes
 const patientsRouter = require('./routes/patients');
 const doctorsRouter = require('./routes/doctors');
 const appointmentsRouter = require('./routes/appointments');
+<<<<<<< HEAD
+=======
+const prescriptionsRouter = require('./routes/prescriptions');
+>>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
 const authRouter = require('./routes/auth');
 
 app.use('/api/patients', patientsRouter);
 app.use('/api/doctors', doctorsRouter);
 app.use('/api/appointments', appointmentsRouter);
+<<<<<<< HEAD
+=======
+app.use('/api/prescriptions', prescriptionsRouter);
+>>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
 app.use('/api/auth', authRouter);
 
 /**
