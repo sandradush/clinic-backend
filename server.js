@@ -38,10 +38,14 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 const patientsRouter = require('./routes/patients');
 const doctorsRouter = require('./routes/doctors');
 const appointmentsRouter = require('./routes/appointments');
+const prescriptionsRouter = require('./routes/prescriptions');
+const authRouter = require('./routes/auth');
 
 app.use('/api/patients', patientsRouter);
 app.use('/api/doctors', doctorsRouter);
 app.use('/api/appointments', appointmentsRouter);
+app.use('/api/prescriptions', prescriptionsRouter);
+app.use('/api/auth', authRouter);
 
 /**
  * @swagger
