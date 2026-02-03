@@ -9,7 +9,10 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+// Allow all origins and enable credentials (reflect origin)
+app.use(cors({ origin: true, credentials: true }));
+// Enable pre-flight for all routes
+app.options('*', cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 // Swagger configuration

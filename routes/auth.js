@@ -27,6 +27,34 @@ const {
  *           type: string
  *         role:
  *           type: string
+ *     SignInRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *         password:
+ *           type: string
+ *           format: password
+ *     SignUpRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *         password:
+ *           type: string
+ *           format: password
+ *         name:
+ *           type: string
+ *         role:
+ *           type: string
  *     AuthUser:
  *       type: object
  *       properties:
@@ -70,7 +98,7 @@ const {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/AuthRequest'
+ *             $ref: '#/components/schemas/SignUpRequest'
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -96,7 +124,7 @@ router.post('/signup', signUp);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/AuthRequest'
+ *             $ref: '#/components/schemas/SignInRequest'
  *     responses:
  *       200:
  *         description: Sign in successful
