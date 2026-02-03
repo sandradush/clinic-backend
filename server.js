@@ -2,24 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const rateLimit = require('express-rate-limit');
+const cors = require('cors');
+const pool = require('./config/db');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
-const cors = require('cors');
 
-app.use(cors({
-  origin: 'http://localhost:3001', // or your frontend URL
-  credentials: true
-}));
-
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
-  message: { error: 'Too many requests, please try again later' }
-});
-
-app.use(generalLimiter);
-
+// Middleware
+app.use(cors());
 app.use(express.json());
 
 // Swagger configuration
@@ -48,20 +38,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 const patientsRouter = require('./routes/patients');
 const doctorsRouter = require('./routes/doctors');
 const appointmentsRouter = require('./routes/appointments');
-const authRouter = require('./routes/auth');
-const logger = require('./config/logger');
-const { errorHandler, notFound } = require('./middleware/errorHandler');
-
-// Logging middleware
-app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`, { ip: req.ip, userAgent: req.get('User-Agent') });
-  next();
-});
 
 app.use('/api/patients', patientsRouter);
 app.use('/api/doctors', doctorsRouter);
 app.use('/api/appointments', appointmentsRouter);
-app.use('/api/auth', authRouter);
 
 /**
  * @swagger
@@ -86,29 +66,21 @@ app.use('/api/auth', authRouter);
  */
 app.get('/api/health', async (req, res) => {
   try {
-    // Test Supabase connection
-    const supabase = require('./config/supabase');
-    const { data, error } = await supabase.from('patients').select('count', { count: 'exact', head: true });
-    
+    await pool.query('SELECT 1');
     res.json({
       status: 'OK',
       timestamp: new Date().toISOString(),
-      supabase: error ? 'disconnected' : 'connected',
-      database: error ? error.message : 'accessible'
+      database: 'connected'
     });
-  } catch (err) {
+  } catch (error) {
     res.json({
       status: 'OK',
       timestamp: new Date().toISOString(),
-      supabase: 'error',
-      database: err.message
+      database: 'disconnected',
+      error: error.message
     });
   }
 });
-
-// Error handling middleware (must be last)
-app.use(notFound);
-app.use(errorHandler);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
