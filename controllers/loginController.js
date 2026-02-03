@@ -100,3 +100,14 @@ exports.getCurrentUser = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Return all users (id, email, name, role, created_at)
+exports.getAllUsers = async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, email, name, role, created_at FROM users ORDER BY id');
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
