@@ -6,6 +6,7 @@ const {
   signOut,
   getCurrentUser
 } = require('../controllers/loginController');
+const { getAllUsers } = require('../controllers/loginController');
 
 /**
  * @swagger
@@ -175,5 +176,36 @@ router.post('/signout', signOut);
  *         description: Not authenticated
  */
 router.get('/me', getCurrentUser);
+
+/**
+ * @swagger
+ * /api/auth/users:
+ *   get:
+ *     summary: Get all users
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: List of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                   name:
+ *                     type: string
+ *                   role:
+ *                     type: string
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ */
+router.get('/users', getAllUsers);
 
 module.exports = router;
