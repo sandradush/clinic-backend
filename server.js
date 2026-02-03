@@ -16,6 +16,10 @@ app.options('*', cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 // Swagger configuration
+// Allow setting a hosted URL via env var `SERVER_URL` (falls back to localhost)
+const SWAGGER_SERVER_URL = process.env.SERVER_URL || `http://localhost:${PORT}`;
+const SWAGGER_SERVER_DESC = process.env.SERVER_ENV_DESC || (process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server');
+
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -26,8 +30,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: `http://localhost:${PORT}`,
-        description: 'Development server',
+        url: SWAGGER_SERVER_URL,
+        description: SWAGGER_SERVER_DESC,
       },
     ],
   },
