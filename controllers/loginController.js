@@ -55,30 +55,11 @@ exports.signUp = [authLimiter, async (req, res) => {
   } catch (error) {
     console.error('Server error during signup:', error);
     res.status(500).json({ error: 'Internal server error' });
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
   }
+}];
 
+exports.signIn = [authLimiter, async (req, res) => {
   try {
-<<<<<<< HEAD
-    const result = await pool.query(
-      'SELECT id, email, name, role FROM users WHERE email = $1 AND password = $2',
-      [email, password]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const user = result.rows[0];
-    res.json({
-      message: 'Login successful',
-      user,
-      token: `token_${user.id}_${Date.now()}`
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Database error' });
-  }
-=======
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
@@ -96,7 +77,7 @@ exports.signUp = [authLimiter, async (req, res) => {
     console.error('Server error during signin:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-}];
+};
 
 exports.signOut = async (req, res) => {
   // With stateless JWTs, sign-out is client-side (remove token). Here we return success.
