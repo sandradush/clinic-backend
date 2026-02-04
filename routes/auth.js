@@ -1,42 +1,5 @@
 const express = require('express');
 const router = express.Router();
-<<<<<<< HEAD
-const { login, register } = require('../controllers/loginController');
-
-/**
- * @swagger
- * /api/auth/login:
- *   post:
- *     summary: User login
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *     responses:
- *       200:
- *         description: Login successful
- *       401:
- *         description: Invalid credentials
- */
-router.post('/login', login);
-
-/**
- * @swagger
- * /api/auth/register:
- *   post:
- *     summary: Register new user
-=======
 const {
   signUp,
   signIn,
@@ -130,37 +93,12 @@ const { getAllUsers } = require('../controllers/loginController');
  * /api/auth/signup:
  *   post:
  *     summary: Register a new user
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
  *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
-<<<<<<< HEAD
- *             type: object
- *             required:
- *               - email
- *               - password
- *             properties:
- *               email:
- *                 type: string
- *               password:
- *                 type: string
- *               name:
- *                 type: string
- *               role:
- *                 type: string
- *     responses:
- *       201:
- *         description: User registered successfully
- *       409:
- *         description: User already exists
- */
-router.post('/register', register);
-
-module.exports = router;
-=======
  *             $ref: '#/components/schemas/SignUpRequest'
  *     responses:
  *       201:
@@ -271,4 +209,3 @@ router.get('/me', getCurrentUser);
 router.get('/users', getAllUsers);
 
 module.exports = router;
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558

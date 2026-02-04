@@ -69,19 +69,13 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(null, { swaggerUrl: '/api-
 const patientsRouter = require('./routes/patients');
 const doctorsRouter = require('./routes/doctors');
 const appointmentsRouter = require('./routes/appointments');
-<<<<<<< HEAD
-=======
 const prescriptionsRouter = require('./routes/prescriptions');
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
 const authRouter = require('./routes/auth');
 
 app.use('/api/patients', patientsRouter);
 app.use('/api/doctors', doctorsRouter);
 app.use('/api/appointments', appointmentsRouter);
-<<<<<<< HEAD
-=======
 app.use('/api/prescriptions', prescriptionsRouter);
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
 app.use('/api/auth', authRouter);
 
 /**

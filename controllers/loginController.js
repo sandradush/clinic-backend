@@ -1,12 +1,3 @@
-<<<<<<< HEAD
-const pool = require('../config/db');
-
-const login = async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required' });
-=======
 // controllers/loginController.js
 const rateLimit = require('express-rate-limit');
 const pool = require('../config/db');
@@ -77,45 +68,15 @@ exports.signIn = [authLimiter, async (req, res) => {
     console.error('Server error during signin:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-};
+}];
 
 exports.signOut = async (req, res) => {
   // With stateless JWTs, sign-out is client-side (remove token). Here we return success.
   res.status(200).json({ message: 'Sign out successful. Please delete token client-side.' });
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
 };
 
-const register = async (req, res) => {
-  const { email, password, name, role = 'nurse' } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Email and password required' });
-  }
-
+exports.getCurrentUser = async (req, res) => {
   try {
-<<<<<<< HEAD
-    // Check if user exists
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE email = $1',
-      [email]
-    );
-
-    if (existingUser.rows.length > 0) {
-      return res.status(409).json({ error: 'User already exists' });
-    }
-
-    // Insert new user
-    const result = await pool.query(
-      'INSERT INTO users (email, password, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role',
-      [email, password, name, role]
-    );
-
-    const newUser = result.rows[0];
-    res.status(201).json({
-      message: 'User registered successfully',
-      user: newUser
-    });
-=======
     const auth = req.headers.authorization;
     if (!auth) return res.status(401).json({ error: 'Not authenticated' });
     const parts = auth.split(' ');
@@ -134,17 +95,11 @@ const register = async (req, res) => {
     if (!rows[0]) return res.status(401).json({ error: 'Not authenticated' });
 
     res.status(200).json({ user: buildUser(rows[0]) });
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
   } catch (error) {
     res.status(500).json({ error: 'Database error' });
   }
 };
 
-<<<<<<< HEAD
-module.exports = {
-  login,
-  register
-=======
 // Return all users (id, email, name, role, created_at)
 exports.getAllUsers = async (req, res) => {
   try {
@@ -154,5 +109,4 @@ exports.getAllUsers = async (req, res) => {
     console.error('Error fetching users:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
->>>>>>> 7b8136e31fa1af0c611ba8ebee1b627f3e426558
 };
