@@ -71,12 +71,16 @@ const doctorsRouter = require('./routes/doctors');
 const appointmentsRouter = require('./routes/appointments');
 const prescriptionsRouter = require('./routes/prescriptions');
 const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
+const doctorRequestsRouter = require('./routes/doctorRequests');
 
 app.use('/api/patients', patientsRouter);
 app.use('/api/doctors', doctorsRouter);
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/prescriptions', prescriptionsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/users', usersRouter);
+app.use('/api/doctor-requests', doctorRequestsRouter);
 
 /**
  * @swagger
