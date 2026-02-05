@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS doctors (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure `status` column exists for doctor approval workflow
+ALTER TABLE doctors
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+
 -- Create appointments table
 CREATE TABLE IF NOT EXISTS appointments (
   id SERIAL PRIMARY KEY,
@@ -35,3 +39,7 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT DEFAULT 'user',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add status column to users to support workflows where doctors are stored in users table
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
