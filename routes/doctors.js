@@ -6,6 +6,7 @@ const {
   createDoctor,
   updateDoctor,
   deleteDoctor
+  , getPendingDoctors, updateDoctorStatus, getApprovedUsers
 } = require('../controllers/doctorsController');
 
 /**
@@ -16,27 +17,17 @@ const {
  *       type: object
  *       required:
  *         - name
- *         - specialty
- *         - phone
  *         - email
  *       properties:
  *         id:
  *           type: integer
  *         name:
  *           type: string
- *         specialty:
- *           type: string
- *         phone:
- *           type: string
  *         email:
  *           type: string
- */
-
-/**
- * @swagger
- * tags:
- *   name: Doctors
- *   description: Doctor management endpoints
+ *         status:
+ *           type: string
+ *           enum: [pending, approved, rejected]
  */
 
 /**
@@ -57,6 +48,64 @@ const {
  */
 router.get('/', getAllDoctors);
 
+/**
+ * @swagger
+ * /api/doctors/pending:
+ *   get:
+ *     summary: Get doctors with pending status
+ *     tags: [Doctors]
+ *     responses:
+ *       200:
+ *         description: List of pending doctors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Doctor'
+ */
+router.get('/pending', getPendingDoctors);
+
+/**
+ * @swagger
+ * /api/doctors/approved-users:
+ *   get:
+ *     summary: Get approved doctors from users table
+ *     tags: [Doctors]
+ *     responses:
+ *       200:
+ *         description: List of approved doctors from users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Doctor'
+ */
+router.get('/approved-users', getApprovedUsers);
+
+/**
+ * @swagger
+ * /api/doctors/{id}:
+ *   get:
+ *     summary: Get doctor by ID
+ *     tags: [Doctors]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Doctor details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Doctor'
+ *       404:
+ *         description: Doctor not found
+ */
 /**
  * @swagger
  * /api/doctors/{id}:
@@ -115,9 +164,9 @@ router.post('/', createDoctor);
 
 /**
  * @swagger
- * /api/doctors/{id}:
+ * /api/doctors/{id}/status:
  *   put:
- *     summary: Update doctor
+ *     summary: Update doctor's status
  *     tags: [Doctors]
  *     parameters:
  *       - in: path
@@ -130,10 +179,48 @@ router.post('/', createDoctor);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Doctor'
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, approved, rejected]
  *     responses:
  *       200:
- *         description: Doctor updated successfully
+ *         description: Doctor status updated successfully
+ *       400:
+ *         description: Invalid status
+ *       404:
+ *         description: Doctor not found
+ */
+router.put('/:id/status', updateDoctorStatus);
+
+/**
+ * @swagger
+ * /api/doctors/{id}:
+ *   put:
+ *     summary: Update doctor's status (status-only)
+ *     tags: [Doctors]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, approved, rejected]
+ *     responses:
+ *       200:
+ *         description: Doctor status updated successfully
+ *       400:
+ *         description: Invalid status
  *       404:
  *         description: Doctor not found
  */
