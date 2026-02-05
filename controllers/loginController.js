@@ -54,12 +54,17 @@ exports.signIn = [authLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-    const { rows } = await pool.query('SELECT id, email, password_hash, name, role FROM users WHERE email = $1', [email]);
+    const { rows } = await pool.query('SELECT id, email, password_hash, name, role, is_approved FROM users WHERE email = $1', [email]);
     const userRow = rows[0];
     if (!userRow) return res.status(401).json({ error: 'Invalid credentials' });
 
     const ok = await bcrypt.compare(password, userRow.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+    // Check if doctor is approved
+    if (userRow.role === 'doctor' && !userRow.is_approved) {
+      return res.status(403).json({ error: 'Doctor account pending approval' });
+    }
 
     const token = jwt.sign({ id: userRow.id, email: userRow.email, name: userRow.name, role: userRow.role }, JWT_SECRET, { expiresIn: '8h' });
 
@@ -100,13 +105,65 @@ exports.getCurrentUser = async (req, res) => {
   }
 };
 
-// Return all users (id, email, name, role, created_at)
+// Get current authenticated user (any authenticated user)
+exports.getCurrentUser = async (req, res) => {
+  res.status(200).json({ user: buildUser(req.user) });
+};
+
+// Get all users (admin only)
 exports.getAllUsers = async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT id, email, name, role, created_at FROM users ORDER BY id');
     res.json(rows);
   } catch (error) {
     console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get users by role (admin only)
+exports.getUsersByRole = async (req, res) => {
+  try {
+    const { role } = req.params;
+    const validRoles = ['admin', 'doctor', 'patient'];
+    
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    
+    const { rows } = await pool.query(
+      'SELECT id, email, name, role, created_at FROM users WHERE role = $1 ORDER BY id',
+      [role]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching users by role:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Delete user (admin only)
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user exists
+    const { rows: existing } = await pool.query('SELECT id, role FROM users WHERE id = $1', [id]);
+    if (!existing.length) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Prevent admin from deleting themselves
+    if (req.user.id === parseInt(id)) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+    
+    // Soft delete - disable user instead of hard delete
+    await pool.query('UPDATE users SET is_active = false WHERE id = $1', [id]);
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -1,101 +1,84 @@
 const express = require('express');
 const router = express.Router();
-const { validatePatient } = require('../middleware/validation');
 const {
   getAllPatients,
   getPatientById,
+  getMyProfile,
   createPatient,
   updatePatient,
+  updateMyProfile,
   deletePatient
 } = require('../controllers/patientsController');
-
-// Sample data
-let patients = [
-  { id: 1, name: 'John Doe', age: 30, phone: '123-456-7890' },
-  { id: 2, name: 'Jane Smith', age: 25, phone: '098-765-4321' }
-];
+const { authenticateToken, requireAdmin, requireDoctor, requirePatient } = require('../middleware/auth');
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     Patient:
- *       type: object
- *       required:
- *         - name
- *         - age
- *         - phone
- *       properties:
- *         id:
- *           type: integer
- *           description: Auto-generated patient ID
- *         name:
- *           type: string
- *           description: Patient's full name
- *         age:
- *           type: integer
- *           description: Patient's age
- *         phone:
- *           type: string
- *           description: Patient's phone number
+ * /api/patients/me:
+ *   get:
+ *     summary: Get own profile (Patient access)
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Patient profile
+ *       404:
+ *         description: Profile not found
  */
+router.get('/me', authenticateToken, requirePatient, getMyProfile);
 
 /**
  * @swagger
- * tags:
- *   name: Patients
- *   description: Patient management endpoints
+ * /api/patients/me:
+ *   put:
+ *     summary: Update own profile (Patient access)
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               address:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
  */
+router.put('/me', authenticateToken, requirePatient, updateMyProfile);
 
 /**
  * @swagger
  * /api/patients:
  *   get:
- *     summary: Get all patients
+ *     summary: Get all patients (Admin/Doctor access)
  *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of all patients
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Patient'
  */
-router.get('/', getAllPatients);
-
-/**
- * @swagger
- * /api/patients/{id}:
- *   get:
- *     summary: Get patient by ID
- *     tags: [Patients]
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: integer
- *         required: true
- *         description: Patient ID
- *     responses:
- *       200:
- *         description: Patient details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Patient'
- *       404:
- *         description: Patient not found
- */
-router.get('/:id', getPatientById);
+router.get('/', authenticateToken, requireDoctor, getAllPatients);
 
 /**
  * @swagger
  * /api/patients:
  *   post:
- *     summary: Create a new patient
+ *     summary: Create patient manually (Admin access)
  *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -103,32 +86,60 @@ router.get('/:id', getPatientById);
  *           schema:
  *             type: object
  *             required:
+ *               - email
+ *               - password
  *               - name
- *               - age
- *               - phone
  *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
  *               name:
  *                 type: string
- *               age:
- *                 type: integer
  *               phone:
+ *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               address:
  *                 type: string
  *     responses:
  *       201:
  *         description: Patient created successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Patient'
  */
-router.post('/', validatePatient, createPatient);
+router.post('/', authenticateToken, requireAdmin, createPatient);
+
+/**
+ * @swagger
+ * /api/patients/{id}:
+ *   get:
+ *     summary: Get specific patient (Admin/Doctor access)
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Patient details
+ *       404:
+ *         description: Patient not found
+ */
+router.get('/:id', authenticateToken, requireDoctor, getPatientById);
 
 /**
  * @swagger
  * /api/patients/{id}:
  *   put:
- *     summary: Update patient
+ *     summary: Update patient (Admin access)
  *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -140,21 +151,31 @@ router.post('/', validatePatient, createPatient);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Patient'
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               address:
+ *                 type: string
  *     responses:
  *       200:
  *         description: Patient updated successfully
- *       404:
- *         description: Patient not found
  */
-router.put('/:id', validatePatient, updatePatient);
+router.put('/:id', authenticateToken, requireAdmin, updatePatient);
 
 /**
  * @swagger
  * /api/patients/{id}:
  *   delete:
- *     summary: Delete patient
+ *     summary: Archive patient (Admin access)
  *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -162,11 +183,9 @@ router.put('/:id', validatePatient, updatePatient);
  *         schema:
  *           type: integer
  *     responses:
- *       204:
- *         description: Patient deleted successfully
- *       404:
- *         description: Patient not found
+ *       200:
+ *         description: Patient archived successfully
  */
-router.delete('/:id', deletePatient);
+router.delete('/:id', authenticateToken, requireAdmin, deletePatient);
 
 module.exports = router;
