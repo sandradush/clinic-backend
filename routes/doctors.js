@@ -6,7 +6,7 @@ const {
   createDoctor,
   updateDoctor,
   deleteDoctor
-  , getPendingDoctors, updateDoctorStatus
+  , getPendingDoctors, updateDoctorStatus, getApprovedUsers
 } = require('../controllers/doctorsController');
 
 /**
@@ -17,30 +17,17 @@ const {
  *       type: object
  *       required:
  *         - name
- *         - specialty
- *         - phone
  *         - email
  *       properties:
  *         id:
  *           type: integer
  *         name:
  *           type: string
- *         specialty:
- *           type: string
- *         phone:
- *           type: string
  *         email:
  *           type: string
  *         status:
  *           type: string
  *           enum: [pending, approved, rejected]
- */
-
-/**
- * @swagger
- * tags:
- *   name: Doctors
- *   description: Doctor management endpoints
  */
 
 /**
@@ -78,6 +65,24 @@ router.get('/', getAllDoctors);
  *                 $ref: '#/components/schemas/Doctor'
  */
 router.get('/pending', getPendingDoctors);
+
+/**
+ * @swagger
+ * /api/doctors/approved-users:
+ *   get:
+ *     summary: Get approved doctors from users table
+ *     tags: [Doctors]
+ *     responses:
+ *       200:
+ *         description: List of approved doctors from users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Doctor'
+ */
+router.get('/approved-users', getApprovedUsers);
 
 /**
  * @swagger
@@ -193,7 +198,7 @@ router.put('/:id/status', updateDoctorStatus);
  * @swagger
  * /api/doctors/{id}:
  *   put:
- *     summary: Update doctor
+ *     summary: Update doctor's status (status-only)
  *     tags: [Doctors]
  *     parameters:
  *       - in: path
@@ -206,10 +211,16 @@ router.put('/:id/status', updateDoctorStatus);
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Doctor'
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [pending, approved, rejected]
  *     responses:
  *       200:
- *         description: Doctor updated successfully
+ *         description: Doctor status updated successfully
+ *       400:
+ *         description: Invalid status
  *       404:
  *         description: Doctor not found
  */
