@@ -25,7 +25,8 @@ const buildUser = (row) => ({
   id: row.id,
   email: row.email,
   name: row.name,
-  role: row.role
+  role: row.role,
+  status: row.status
 });
 
 // Generate tokens
@@ -38,7 +39,7 @@ const generateTokens = (user) => {
 // Patient self-registration
 exports.register = [authLimiter, async (req, res) => {
   try {
-    const { email, password, name, phone, dateOfBirth, address } = req.body;
+    const { email, password, name } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
@@ -54,23 +55,17 @@ exports.register = [authLimiter, async (req, res) => {
     
     // Create user with patient role
     const { rows: userRows } = await pool.query(
-      'INSERT INTO users (email, password_hash, name, role) VALUES ($1, $2, $3, $4) RETURNING id, email, name, role',
-      [email, password_hash, name, 'patient']
+      'INSERT INTO users (email, password_hash, name, role, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role, status',
+      [email, password_hash, name, 'user', 'pending']
     );
 
-    // Create patient profile
-    await pool.query(
-      'INSERT INTO patients (user_id, phone, date_of_birth, address) VALUES ($1, $2, $3, $4)',
-      [userRows[0].id, phone, dateOfBirth, address]
-    );
-
+    // Note: patient profile table not used for auth; user created in `users` table only
     const user = buildUser(userRows[0]);
-    const tokens = generateTokens(user);
-    
-    res.status(201).json({ 
-      message: 'Patient registered successfully', 
-      user, 
-      ...tokens 
+ 
+    res.status(201).json({
+      message: 'User registered successfully',
+      user,
+     
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -84,7 +79,7 @@ exports.login = [authLimiter, async (req, res) => {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-    const { rows } = await pool.query('SELECT id, email, password_hash, name, role FROM users WHERE email = $1', [email]);
+    const { rows } = await pool.query('SELECT id, email, password_hash, name, role, status FROM users WHERE email = $1', [email]);
     const userRow = rows[0];
     if (!userRow) return res.status(401).json({ error: 'Invalid credentials' });
 
