@@ -8,13 +8,7 @@ require('dotenv').config();
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_in_production';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'refresh_secret_change_this';
 
-// Rate limiters
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  message: { error: 'Too many attempts, please try again later' }
-});
-
+// Rate limiter for password reset only
 const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 3,
@@ -37,7 +31,7 @@ const generateTokens = (user) => {
 };
 
 // Patient self-registration
-exports.register = [authLimiter, async (req, res) => {
+exports.register = async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
@@ -71,10 +65,10 @@ exports.register = [authLimiter, async (req, res) => {
     console.error('Registration error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-}];
+};
 
 // Login
-exports.login = [authLimiter, async (req, res) => {
+exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
@@ -109,7 +103,7 @@ exports.login = [authLimiter, async (req, res) => {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-}];
+};
 
 // Get list of users with role 'doctor' (id and name)
 exports.getDoctors = async (req, res) => {
