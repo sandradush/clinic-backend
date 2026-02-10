@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login } = require('../controllers/authController');
+const { register, login, getDoctors, getPatients } = require('../controllers/authController');
 
 /**
  * @swagger
@@ -111,5 +111,51 @@ router.post('/register', register);
  *         description: Invalid credentials
  */
 router.post('/login', login);
+
+/**
+ * @swagger
+ * /api/auth/doctors:
+ *   get:
+ *     summary: Get list of doctors (id and name)
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Array of doctors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ */
+router.get('/doctors', getDoctors);
+
+/**
+ * @swagger
+ * /api/auth/patients:
+ *   get:
+ *     summary: Get list of patients (id and name)
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Array of patients
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ */
+router.get('/patients', getPatients);
 
 module.exports = router;
