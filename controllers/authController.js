@@ -87,18 +87,51 @@ exports.login = [authLimiter, async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
     const user = buildUser(userRow);
-    const tokens = generateTokens(user);
+    // If doctor role, ensure doctor's profile exists and is approved
+    if (user.role === 'doctor') {
+      try {
+        const { rows: doctorRows } = await pool.query('SELECT id, user_id, status FROM doctors WHERE user_id = $1', [user.id]);
+        const doctor = doctorRows[0];
+        if (!doctor) {
+          return res.status(400).json({ message: 'Please fill doctor information', user, needsDoctorProfile: true });
+        }
+        if (doctor.status && doctor.status.toLowerCase() !== 'approved') {
+          return res.status(403).json({ message: 'Waiting for clinic approval', user, doctorStatus: doctor.status });
+        }
+      } catch (err) {
+        console.error('Doctor lookup error:', err);
+        // fallthrough to successful login if doctors table/query not available
+      }
+    }
 
-    res.status(200).json({ 
-      message: 'Login successful', 
-      user, 
-      ...tokens 
-    });
+    res.status(200).json({ message: 'Login successful', user });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }];
+
+// Get list of users with role 'doctor' (id and name)
+exports.getDoctors = async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, name FROM users WHERE role = $1', ['doctor']);
+    res.json(rows);
+  } catch (error) {
+    console.error('Get doctors error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get list of users with role 'patient' (id and name)
+exports.getPatients = async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT id, name FROM users WHERE role = $1', ['patient']);
+    res.json(rows);
+  } catch (error) {
+    console.error('Get patients error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 
 // Refresh token
 exports.refreshToken = async (req, res) => {
