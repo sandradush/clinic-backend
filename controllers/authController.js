@@ -127,6 +127,42 @@ exports.getDoctors = async (req, res) => {
   }
 };
 
+// Get doctors by status (helper)
+const getDoctorsByStatus = async (status) => {
+  const q = `
+    SELECT d.id as doctor_id, u.id as user_id, u.name, u.email, d.phone, d.speciality,
+           d.licence_file_path, d.national_id, d.status, d.created_at, d.updated_at
+    FROM doctors d
+    JOIN users u ON d.user_id = u.id
+    WHERE d.status = $1
+    ORDER BY d.created_at DESC
+  `;
+  const { rows } = await pool.query(q, [status]);
+  return rows;
+};
+
+// Get pending doctors
+exports.getPendingDoctors = async (req, res) => {
+  try {
+    const rows = await getDoctorsByStatus('pending');
+    res.json(rows);
+  } catch (error) {
+    console.error('Get pending doctors error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get approved doctors
+exports.getApprovedDoctors = async (req, res) => {
+  try {
+    const rows = await getDoctorsByStatus('approved');
+    res.json(rows);
+  } catch (error) {
+    console.error('Get approved doctors error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Get list of users with role 'patient' (id and name)
 exports.getPatients = async (req, res) => {
   try {

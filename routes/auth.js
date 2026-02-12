@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus } = require('../controllers/authController');
+const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus, getPendingDoctors, getApprovedDoctors } = require('../controllers/authController');
 
 // Configure multer for file uploads
 const upload = multer({
@@ -174,6 +174,86 @@ router.get('/doctors', getDoctors);
  *                     type: string
  */
 router.get('/patients', getPatients);
+
+/**
+ * @swagger
+ * /api/auth/doctors/pending:
+ *   get:
+ *     summary: Get list of pending doctors (joined with user name/email)
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Array of pending doctors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   doctor_id:
+ *                     type: integer
+ *                   user_id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   phone:
+ *                     type: string
+ *                   speciality:
+ *                     type: string
+ *                   licence_file_path:
+ *                     type: string
+ *                   national_id:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ */
+router.get('/doctors/pending', getPendingDoctors);
+
+/**
+ * @swagger
+ * /api/auth/doctors/approved:
+ *   get:
+ *     summary: Get list of approved doctors (joined with user name/email)
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Array of approved doctors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   doctor_id:
+ *                     type: integer
+ *                   user_id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                   phone:
+ *                     type: string
+ *                   speciality:
+ *                     type: string
+ *                   licence_file_path:
+ *                     type: string
+ *                   national_id:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ */
+router.get('/doctors/approved', getApprovedDoctors);
 
 /**
  * @swagger
