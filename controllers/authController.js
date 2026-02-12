@@ -83,6 +83,12 @@ exports.login = async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
     const user = buildUser(userRow);
+
+    // Admins bypass doctor profile/status checks
+    if (user.role === 'admin') {
+      return res.status(200).json({ message: 'Login successful', user });
+    }
+
     // If doctor role, attach doctor's profile status (or 'not exist')
     if (user.role === 'doctor') {
       try {
