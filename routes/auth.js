@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus, getPendingDoctors, getApprovedDoctors } = require('../controllers/authController');
+const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus, getPendingDoctors, getApprovedDoctors, getDashboardSummary } = require('../controllers/authController');
 
 // Configure multer for file uploads
 const upload = multer({
@@ -254,6 +254,32 @@ router.get('/doctors/pending', getPendingDoctors);
  *                     format: date-time
  */
 router.get('/doctors/approved', getApprovedDoctors);
+
+/**
+ * @swagger
+ * /api/auth/dashboard:
+ *   get:
+ *     summary: Dashboard summary (total doctors and total patients)
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Summary counts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalDoctors:
+ *                   type: integer
+ *                 totalPatients:
+ *                   type: integer
+  *                 pendingAppointments:
+  *                   type: integer
+  *                 approvedAppointments:
+  *                   type: integer
+ */
+router.get('/dashboard', getDashboardSummary);
+
 
 /**
  * @swagger
