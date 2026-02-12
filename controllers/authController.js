@@ -81,14 +81,17 @@ exports.login = async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
     const user = buildUser(userRow);
-    // If doctor role, ensure doctor's profile exists and is approved
+    // If doctor role, attach doctor's profile status (or 'not exist')
     if (user.role === 'doctor') {
       try {
         const { rows: doctorRows } = await pool.query('SELECT id, user_id, status FROM doctors WHERE user_id = $1', [user.id]);
         const doctor = doctorRows[0];
         if (!doctor) {
-          return res.status(400).json({ message: 'Please fill doctor information', user, needsDoctorProfile: true });
+          // Doctor profile missing — include status and indicate profile needed
+          user.doctorStatus = 'not exist';
+          return res.status(200).json({ message: 'Login successful', user, needsDoctorProfile: true });
         }
+        user.doctorStatus = doctor.status || 'pending';
         if (doctor.status && doctor.status.toLowerCase() !== 'approved') {
           return res.status(403).json({ message: 'Waiting for clinic approval', user, doctorStatus: doctor.status });
         }
@@ -211,6 +214,87 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: 'Password reset successful' });
   } catch (error) {
     console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Create doctor profile tied to a user
+exports.createDoctor = async (req, res) => {
+  try {
+    const { user_id, phone, speciality, licence_file_path, national_id } = req.body;
+
+    if (!user_id || !phone || !speciality || !national_id) {
+      return res.status(400).json({ error: 'user_id, phone, speciality and national_id are required' });
+    }
+
+    // Ensure user exists
+    const { rows: userRows } = await pool.query('SELECT id, role FROM users WHERE id = $1', [user_id]);
+    if (!userRows[0]) return res.status(400).json({ error: 'User not found' });
+
+    // Ensure user has doctor role
+    if (userRows[0].role !== 'doctor') {
+      await pool.query('UPDATE users SET role = $1 WHERE id = $2', ['doctor', user_id]);
+    }
+
+    const insertQuery = `
+      INSERT INTO doctors (user_id, phone, speciality, licence_file_path, national_id, status)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, user_id, phone, speciality, licence_file_path, national_id, status, created_at
+    `;
+
+    const { rows } = await pool.query(insertQuery, [
+      user_id,
+      phone,
+      speciality,
+      licence_file_path || null,
+      national_id,
+      'pending'
+    ]);
+
+    res.status(201).json({ message: 'Doctor profile created', doctor: rows[0] });
+  } catch (error) {
+    console.error('Create doctor error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Update doctor status by doctor id
+exports.updateDoctorStatus = async (req, res) => {
+  try {
+    const doctorId = req.params.id;
+    const { status } = req.body;
+
+    if (!doctorId) return res.status(400).json({ error: 'Doctor id is required in the path' });
+    if (!status) return res.status(400).json({ error: 'status is required in the body' });
+
+    const allowed = ['pending', 'approved', 'rejected'];
+    const normalized = String(status).toLowerCase();
+    if (!allowed.includes(normalized)) {
+      return res.status(400).json({ error: `Invalid status. Allowed: ${allowed.join(', ')}` });
+    }
+
+    const { rows: existing } = await pool.query('SELECT id, user_id, status FROM doctors WHERE id = $1', [doctorId]);
+    if (!existing[0]) return res.status(404).json({ error: 'Doctor not found' });
+
+    const { rows } = await pool.query(
+      'UPDATE doctors SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING id, user_id, phone, speciality, licence_file_path, national_id, status, created_at, updated_at',
+      [normalized, doctorId]
+    );
+
+    // Optionally sync user status when doctor approved/rejected
+    try {
+      if (normalized === 'approved') {
+        await pool.query('UPDATE users SET status = $1 WHERE id = $2', ['approved', rows[0].user_id]);
+      } else if (normalized === 'rejected') {
+        await pool.query('UPDATE users SET status = $1 WHERE id = $2', ['rejected', rows[0].user_id]);
+      }
+    } catch (err) {
+      console.error('Sync user status error:', err);
+    }
+
+    res.json({ message: 'Doctor status updated', doctor: rows[0] });
+  } catch (error) {
+    console.error('Update doctor status error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
