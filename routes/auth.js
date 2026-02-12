@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getDoctors, getPatients } = require('../controllers/authController');
+const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus } = require('../controllers/authController');
 
 /**
  * @swagger
@@ -157,5 +157,128 @@ router.get('/doctors', getDoctors);
  *                     type: string
  */
 router.get('/patients', getPatients);
+
+/**
+ * @swagger
+ * /api/auth/doctors:
+ *   post:
+ *     summary: Create or update doctor profile for a user
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - user_id
+ *               - phone
+ *               - speciality
+ *               - national_id
+ *             properties:
+ *               user_id:
+ *                 type: integer
+ *               phone:
+ *                 type: string
+ *               speciality:
+ *                 type: string
+ *               licence_file_path:
+ *                 type: string
+ *               national_id:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Doctor profile created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 doctor:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     user_id:
+ *                       type: integer
+ *                     phone:
+ *                       type: string
+ *                     speciality:
+ *                       type: string
+ *                     licence_file_path:
+ *                       type: string
+ *                     national_id:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *                     created_at:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ */
+router.post('/doctors', createDoctor);
+
+/**
+ * @swagger
+ * /api/auth/doctors/{id}/status:
+ *   patch:
+ *     summary: Update doctor status by doctor id
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 description: One of pending, approved, rejected
+ *     responses:
+ *       200:
+ *         description: Doctor status updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 doctor:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     user_id:
+ *                       type: integer
+ *                     status:
+ *                       type: string
+ *                     updated_at:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Doctor not found
+ */
+router.patch('/doctors/:id/status', updateDoctorStatus);
 
 module.exports = router;
