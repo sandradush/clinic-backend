@@ -3,6 +3,8 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const axios = require('axios');
+const FormData = require('form-data');
 require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_in_production';
@@ -221,7 +223,8 @@ exports.resetPassword = async (req, res) => {
 // Create doctor profile tied to a user
 exports.createDoctor = async (req, res) => {
   try {
-    const { user_id, phone, speciality, licence_file_path, national_id } = req.body;
+    const { user_id, phone, speciality, national_id } = req.body;
+    const licenceFile = req.file;
 
     if (!user_id || !phone || !speciality || !national_id) {
       return res.status(400).json({ error: 'user_id, phone, speciality and national_id are required' });
@@ -236,6 +239,37 @@ exports.createDoctor = async (req, res) => {
       await pool.query('UPDATE users SET role = $1 WHERE id = $2', ['doctor', user_id]);
     }
 
+    let licence_file_path = null;
+
+    // Upload license file if provided
+    if (licenceFile) {
+      try {
+        const formData = new FormData();
+        formData.append('file', licenceFile.buffer, {
+          filename: licenceFile.originalname,
+          contentType: licenceFile.mimetype
+        });
+
+        const uploadResponse = await axios.post(
+          'https://file-vault-ro9o.onrender.com/upload',
+          formData,
+          {
+            headers: {
+              ...formData.getHeaders(),
+              'accept': 'application/json'
+            }
+          }
+        );
+
+        if (uploadResponse.data && uploadResponse.data.path) {
+          licence_file_path = uploadResponse.data.path;
+        }
+      } catch (uploadError) {
+        console.error('File upload error:', uploadError);
+        return res.status(500).json({ error: 'Failed to upload license file' });
+      }
+    }
+
     const insertQuery = `
       INSERT INTO doctors (user_id, phone, speciality, licence_file_path, national_id, status)
       VALUES ($1, $2, $3, $4, $5, $6)
@@ -246,7 +280,7 @@ exports.createDoctor = async (req, res) => {
       user_id,
       phone,
       speciality,
-      licence_file_path || null,
+      licence_file_path,
       national_id,
       'pending'
     ]);

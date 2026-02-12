@@ -1,6 +1,23 @@
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
 const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus } = require('../controllers/authController');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow PDF files only
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  }
+});
 
 /**
  * @swagger
@@ -162,12 +179,12 @@ router.get('/patients', getPatients);
  * @swagger
  * /api/auth/doctors:
  *   post:
- *     summary: Create or update doctor profile for a user
+ *     summary: Create doctor profile with license file upload
  *     tags: [Auth]
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -182,10 +199,12 @@ router.get('/patients', getPatients);
  *                 type: string
  *               speciality:
  *                 type: string
- *               licence_file_path:
- *                 type: string
  *               national_id:
  *                 type: string
+ *               licence_file:
+ *                 type: string
+ *                 format: binary
+ *                 description: PDF file for doctor's license (optional)
  *     responses:
  *       201:
  *         description: Doctor profile created
@@ -218,15 +237,10 @@ router.get('/patients', getPatients);
  *                       format: date-time
  *       400:
  *         description: Validation error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
+ *       500:
+ *         description: File upload or server error
  */
-router.post('/doctors', createDoctor);
+router.post('/doctors', upload.single('licence_file'), createDoctor);
 
 /**
  * @swagger
