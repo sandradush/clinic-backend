@@ -54,6 +54,46 @@ exports.getAllAppointments = async (req, res) => {
   }
 };
 
+// Get approved appointments
+exports.getApprovedAppointments = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.status = 'approved'
+       ORDER BY a.created_at DESC`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get approved appointments error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get pending appointments
+exports.getPendingAppointments = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE COALESCE(a.status, 'pending') = 'pending'
+       ORDER BY a.created_at DESC`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get pending appointments error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Get appointment by id
 exports.getAppointmentById = async (req, res) => {
   try {

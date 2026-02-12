@@ -163,6 +163,52 @@ exports.getApprovedDoctors = async (req, res) => {
   }
 };
 
+// Dashboard summary: total doctors and total patients (from users table)
+exports.getDashboardSummary = async (req, res) => {
+  try {
+    const q = `
+      SELECT role, COUNT(*) AS count
+      FROM users
+      WHERE role IN ('doctor', 'patient')
+      GROUP BY role
+    `;
+    const { rows } = await pool.query(q);
+
+    const summary = { totalDoctors: 0, totalPatients: 0 };
+    rows.forEach(r => {
+      if (r.role === 'doctor') summary.totalDoctors = parseInt(r.count, 10);
+      if (r.role === 'patient') summary.totalPatients = parseInt(r.count, 10);
+    });
+
+    // Count pending appointments
+    try {
+      const { rows: apptRows } = await pool.query(
+        `SELECT COUNT(*)::int AS pending_count FROM appointments WHERE COALESCE(status, 'pending') = 'pending'`
+      );
+      summary.pendingAppointments = apptRows[0] ? apptRows[0].pending_count : 0;
+    } catch (err) {
+      console.error('Failed to get pending appointments count:', err);
+      summary.pendingAppointments = 0;
+    }
+
+    // Count approved appointments
+    try {
+      const { rows: approvedRows } = await pool.query(
+        `SELECT COUNT(*)::int AS approved_count FROM appointments WHERE status = 'approved'`
+      );
+      summary.approvedAppointments = approvedRows[0] ? approvedRows[0].approved_count : 0;
+    } catch (err) {
+      console.error('Failed to get approved appointments count:', err);
+      summary.approvedAppointments = 0;
+    }
+
+    res.json(summary);
+  } catch (error) {
+    console.error('Dashboard summary error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Get list of users with role 'patient' (id and name)
 exports.getPatients = async (req, res) => {
   try {

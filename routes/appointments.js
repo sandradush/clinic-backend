@@ -9,6 +9,7 @@ const {
   getDoctorStatistics
 } = require('../controllers/appointmentsController');
 const { getAppointmentSummary } = require('../controllers/appointmentsController');
+const { getApprovedAppointments, getPendingAppointments } = require('../controllers/appointmentsController');
 
 /**
  * @swagger
@@ -77,6 +78,30 @@ router.get('/', getAllAppointments);
  *         description: List of appointments for the doctor
  */
 router.get('/doctor/:doctorId', getAppointmentsByDoctor);
+
+/**
+ * @swagger
+ * /api/appointments/approved:
+ *   get:
+ *     summary: Get approved appointments
+ *     tags: [Appointments]
+ *     responses:
+ *       200:
+ *         description: List of approved appointments
+ */
+router.get('/approved', getApprovedAppointments);
+
+/**
+ * @swagger
+ * /api/appointments/pending:
+ *   get:
+ *     summary: Get pending appointments
+ *     tags: [Appointments]
+ *     responses:
+ *       200:
+ *         description: List of pending appointments
+ */
+router.get('/pending', getPendingAppointments);
 
 /**
  * @swagger
