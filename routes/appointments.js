@@ -5,6 +5,7 @@ const {
   getAppointmentById,
   createAppointment,
   createAppointmentNoDoctor,
+  getAppointmentsByPatient,
   getAppointmentsByDoctor,
   updateAppointmentStatus,
   getDoctorStatistics
@@ -79,6 +80,30 @@ router.get('/', getAllAppointments);
  *         description: List of appointments for the doctor
  */
 router.get('/doctor/:doctorId', getAppointmentsByDoctor);
+
+/**
+ * @swagger
+ * /api/appointments/patient/{patientId}:
+ *   get:
+ *     summary: Get appointments for a specific patient
+ *     tags: [Appointments]
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: List of appointments for the patient
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Appointment'
+ */
+router.get('/patient/:patientId', getAppointmentsByPatient);
 
 /**
  * @swagger
