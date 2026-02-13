@@ -4,6 +4,7 @@ const {
   getAllAppointments,
   getAppointmentById,
   createAppointment,
+  createAppointmentNoDoctor,
   getAppointmentsByDoctor,
   updateAppointmentStatus,
   getDoctorStatistics
@@ -19,7 +20,6 @@ const { getApprovedAppointments, getPendingAppointments } = require('../controll
  *       type: object
  *       required:
  *         - patient_id
- *         - doctor_id
  *         - date
  *         - time
  *       properties:
@@ -33,6 +33,7 @@ const { getApprovedAppointments, getPendingAppointments } = require('../controll
  *           type: integer
  *         doctor_name:
  *           type: string
+ *         # doctor_id is optional; endpoints may set it to null when not provided
  *         date:
  *           type: string
  *           format: date
@@ -205,6 +206,38 @@ router.get('/:id', getAppointmentById);
  *         description: Appointment created successfully
  */
 router.post('/', createAppointment);
+router.post('/t', createAppointmentNoDoctor);
+/**
+ * @swagger
+ * /api/appointments/t:
+ *   post:
+ *     summary: Create a new appointment without specifying a doctor (doctor_id will be null)
+ *     tags: [Appointments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - patient_id
+ *               - date
+ *               - time
+ *             properties:
+ *               patient_id:
+ *                 type: integer
+ *               date:
+ *                 type: string
+ *                 format: date
+ *               time:
+ *                 type: string
+ *                 format: time
+ *               description:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Appointment created successfully
+ */
 
 /**
  * @swagger

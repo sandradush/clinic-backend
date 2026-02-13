@@ -4,15 +4,15 @@ const pool = require('../config/db');
 exports.createAppointment = async (req, res) => {
   try {
     const { patient_id, doctor_id, date, time, description } = req.body;
-    if (!patient_id || !doctor_id || !date || !time) {
-      return res.status(400).json({ error: 'patient_id, doctor_id, date and time are required' });
+    if (!patient_id || !date || !time) {
+      return res.status(400).json({ error: 'patient_id, date and time are required' });
     }
 
     const { rows: insertRows } = await pool.query(
       `INSERT INTO appointments (patient_id, doctor_id, date, time, description)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [patient_id, doctor_id, date, time, description || null]
+      [patient_id, doctor_id || null, date, time, description || null]
     );
 
     const newId = insertRows[0].id;
@@ -267,3 +267,43 @@ exports.getAppointmentSummary = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Create appointment without doctor (doctor_id will be NULL)
+exports.createAppointmentNoDoctor = async (req, res) => {
+  try {
+    // Accept same params as normal create but force doctor_id to NULL
+    const { patient_id, doctor_id: _ignored_doctor_id, date, time, description } = req.body;
+    if (!patient_id || !date || !time) {
+      return res.status(400).json({ error: 'patient_id, date and time are required' });
+    }
+
+    const { rows: insertRows } = await pool.query(
+      `INSERT INTO appointments (patient_id, doctor_id, date, time, description)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [patient_id, null, date, time, description || null]
+    );
+
+    const newId = insertRows[0].id;
+
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.id = $1`,
+      [newId]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (error) {
+    console.error('Create appointment (no doctor) error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Create appointment with provided doctor_name but no doctor_id (doctor_id = NULL)
+// This does NOT create or modify any user records; it only returns doctor_name in response.
+// (removed) createAppointmentWithDoctorName — endpoint /api/appointments/t2 was removed
