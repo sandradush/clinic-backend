@@ -138,6 +138,28 @@ exports.getAppointmentsByDoctor = async (req, res) => {
   }
 };
 
+// Get appointments by patient id
+exports.getAppointmentsByPatient = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.patient_id = $1
+       ORDER BY a.created_at DESC`,
+      [patientId]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get appointments by patient error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Get statistics for a doctor: counts by status and today's appointments
 exports.getDoctorStatistics = async (req, res) => {
   try {
