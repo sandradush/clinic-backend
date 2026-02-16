@@ -325,6 +325,9 @@ exports.createAppointmentNoDoctor = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+// Create appointment with provided doctor_name but no doctor_id (doctor_id = NULL)
+// This does NOT create or modify any user records; it only returns doctor_name in response.
+// (removed) createAppointmentWithDoctorName — endpoint /api/appointments/t2 was removed
 
 // Get appointments waiting for doctor (doctor_id IS NULL)
 exports.getWaitingPatients = async (req, res) => {
@@ -379,7 +382,3 @@ exports.updateAppointmentDoctor = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
-// Create appointment with provided doctor_name but no doctor_id (doctor_id = NULL)
-// This does NOT create or modify any user records; it only returns doctor_name in response.
-// (removed) createAppointmentWithDoctorName — endpoint /api/appointments/t2 was removed
