@@ -236,6 +236,36 @@ exports.updateAppointmentStatus = async (req, res) => {
   }
 };
 
+// Approve an appointment (sets status = 'approved')
+exports.approveAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { rows: updateRows } = await pool.query(
+      "UPDATE appointments SET status = $1 WHERE id = $2 RETURNING id",
+      ['approved', id]
+    );
+
+    if (!updateRows[0]) return res.status(404).json({ error: 'Appointment not found' });
+
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.id = $1`,
+      [id]
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Approve appointment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Appointment summary: appointment + perceptions + symptoms + medicals
 exports.getAppointmentSummary = async (req, res) => {
   try {

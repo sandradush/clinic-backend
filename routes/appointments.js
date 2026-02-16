@@ -8,6 +8,7 @@ const {
   getAppointmentsByPatient,
   getAppointmentsByDoctor,
   updateAppointmentStatus,
+  approveAppointment,
   getDoctorStatistics
 } = require('../controllers/appointmentsController');
 const { getWaitingPatients, updateAppointmentDoctor } = require('../controllers/appointmentsController');
@@ -306,10 +307,15 @@ router.post('/t', createAppointmentNoDoctor);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - status
  *             properties:
  *               status:
  *                 type: string
- *                 description: Status value (pending, approved, rejected)
+ *                 description: Status value
+ *                 enum: [pending, approved, rejected]
+ *             example:
+ *               status: approved
  *     responses:
  *       200:
  *         description: Updated appointment
@@ -363,5 +369,31 @@ router.patch('/:id/status', updateAppointmentStatus);
  *         description: Internal server error
  */
 router.patch('/:id/doctor', updateAppointmentDoctor);
+
+/**
+ * @swagger
+ * /api/appointments/{id}/approve:
+ *   patch:
+ *     summary: Approve an appointment (set status to 'approved')
+ *     tags: [Appointments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Updated appointment (approved)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Appointment'
+ *       404:
+ *         description: Appointment not found
+ *       500:
+ *         description: Internal server error
+ */
+router.patch('/:id/approve', require('../controllers/appointmentsController').approveAppointment);
 
 module.exports = router;
