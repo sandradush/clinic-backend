@@ -326,6 +326,60 @@ exports.createAppointmentNoDoctor = async (req, res) => {
   }
 };
 
+// Get appointments waiting for doctor (doctor_id IS NULL)
+exports.getWaitingPatients = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.doctor_id IS NULL
+       ORDER BY a.created_at DESC`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get waiting patients error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Update appointment's doctor_id (assign a doctor)
+exports.updateAppointmentDoctor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { doctor_id } = req.body;
+    if (doctor_id === undefined || doctor_id === null) {
+      return res.status(400).json({ error: 'doctor_id is required in request body' });
+    }
+
+    const { rows: updateRows } = await pool.query(
+      'UPDATE appointments SET doctor_id = $1 WHERE id = $2 RETURNING id',
+      [doctor_id, id]
+    );
+
+    if (!updateRows[0]) return res.status(404).json({ error: 'Appointment not found' });
+
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.id = $1`,
+      [id]
+    );
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Update appointment doctor error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Create appointment with provided doctor_name but no doctor_id (doctor_id = NULL)
 // This does NOT create or modify any user records; it only returns doctor_name in response.
 // (removed) createAppointmentWithDoctorName — endpoint /api/appointments/t2 was removed
