@@ -568,26 +568,32 @@ exports.getUserProfile = async (req, res) => {
   }
 };
 
-// Preview a profile image by path (forwards to file-vault preview endpoint)
+// Preview a profile image for a user by user_id: lookup image_path in DB, forward to file-vault preview
 exports.previewProfileImage = async (req, res) => {
   try {
-    const imagePath = req.query.path || req.body.path;
-    if (!imagePath) return res.status(400).json({ error: 'path query parameter is required' });
+    const userId = req.query.user_id || req.body.user_id;
+    if (!userId) return res.status(400).json({ error: 'user_id query parameter is required' });
 
+    // Lookup image_path from profile_images
     try {
+      const { rows } = await pool.query('SELECT image_path FROM profile_images WHERE user_id = $1', [userId]);
+      const row = rows[0];
+      if (!row || !row.image_path) return res.status(404).json({ error: 'Profile image not found for user' });
+
+      const imagePath = row.image_path;
+
       const resp = await axios.get('https://file-vault-ro9o.onrender.com/preview', {
         params: { path: imagePath },
         headers: { accept: 'application/json' }
       });
 
-      // Return preview_url if present otherwise return full response
       if (resp.data && resp.data.preview_url) {
         return res.json({ preview_url: resp.data.preview_url });
       }
       return res.json(resp.data || {});
-    } catch (err) {
-      console.error('previewProfileImage upstream error:', err && err.response ? err.response.data : err);
-      return res.status(502).json({ error: 'Failed to fetch preview from file vault' });
+    } catch (dbErr) {
+      console.error('previewProfileImage DB/upstream error:', dbErr && dbErr.response ? dbErr.response.data : dbErr);
+      return res.status(502).json({ error: 'Failed to fetch preview or read from DB' });
     }
   } catch (error) {
     console.error('previewProfileImage error:', error);

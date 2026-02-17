@@ -397,15 +397,15 @@ router.post('/profile-image', uploadImage.single('image'), require('../controlle
  * @swagger
  * /api/auth/profile-image/preview:
  *   get:
- *     summary: Get preview URL for a profile image stored in the file vault
+ *     summary: Get preview URL for a user's profile image (lookup by user_id)
  *     tags: [Auth]
  *     parameters:
  *       - in: query
- *         name: path
+ *         name: user_id
  *         required: true
  *         schema:
- *           type: string
- *         description: Path of the file as returned by the upload endpoint
+ *           type: integer
+ *         description: User id whose profile image will be previewed
  *     responses:
  *       200:
  *         description: Preview URL returned
@@ -418,6 +418,8 @@ router.post('/profile-image', uploadImage.single('image'), require('../controlle
  *                   type: string
  *       400:
  *         description: Validation error
+ *       404:
+ *         description: No profile image found for user
  *       502:
  *         description: Upstream file vault error
  */
