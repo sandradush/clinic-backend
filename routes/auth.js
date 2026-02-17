@@ -19,6 +19,19 @@ const upload = multer({
   }
 });
 
+// Multer instance for profile images (PNG/JPEG)
+const uploadImage = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpeg' || file.mimetype === 'image/jpg') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PNG and JPEG images are allowed'), false);
+    }
+  }
+});
+
 /**
  * @swagger
  * /api/auth/register:
@@ -347,6 +360,173 @@ router.get('/dashboard', getDashboardSummary);
  *         description: File upload or server error
  */
 router.post('/doctors', upload.single('licence_file'), createDoctor);
+
+/**
+ * @swagger
+ * /api/auth/profile-image:
+ *   post:
+ *     summary: Upload or update user profile image
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - user_id
+ *               - image
+ *             properties:
+ *               user_id:
+ *                 type: integer
+ *               image:
+ *                 type: string
+ *                 format: binary
+ *                 description: PNG or JPEG image
+ *     responses:
+ *       200:
+ *         description: Image uploaded and saved
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
+router.post('/profile-image', uploadImage.single('image'), require('../controllers/authController').uploadProfileImage);
+
+// User profile endpoints (medical/profile details)
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   post:
+ *     summary: Create or update a user's medical/profile details
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - user_id
+ *             properties:
+ *               user_id:
+ *                 type: integer
+ *               dob:
+ *                 type: string
+ *                 format: date
+ *               gender:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               blood_group:
+ *                 type: string
+ *               allergies:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               chronic_conditions:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               current_medications:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               emergency_contact_name:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Profile saved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 profile:
+ *                   type: object
+ *                   properties:
+ *                     user_id:
+ *                       type: integer
+ *                     dob:
+ *                       type: string
+ *                       format: date
+ *                     gender:
+ *                       type: string
+ *                     phone:
+ *                       type: string
+ *                     blood_group:
+ *                       type: string
+ *                     allergies:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     chronic_conditions:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     current_medications:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                     emergency_contact_name:
+ *                       type: string
+ *                     address:
+ *                       type: string
+ */
+router.post('/profile', require('../controllers/authController').upsertUserProfile);
+/**
+ * @swagger
+ * /api/auth/profile/{user_id}:
+ *   get:
+ *     summary: Get a user's profile by user_id
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: user_id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: User profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user_id:
+ *                   type: integer
+ *                 dob:
+ *                   type: string
+ *                   format: date
+ *                 gender:
+ *                   type: string
+ *                 phone:
+ *                   type: string
+ *                 blood_group:
+ *                   type: string
+ *                 allergies:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 chronic_conditions:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 current_medications:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 emergency_contact_name:
+ *                   type: string
+ *                 address:
+ *                   type: string
+ */
+router.get('/profile/:user_id', require('../controllers/authController').getUserProfile);
 
 /**
  * @swagger

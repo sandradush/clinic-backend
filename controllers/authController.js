@@ -420,3 +420,150 @@ exports.updateDoctorStatus = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Upload or update user profile image
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    const file = req.file;
+    const { user_id } = req.body;
+
+    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
+
+    // Ensure user exists
+    const { rows: userRows } = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
+    if (!userRows[0]) return res.status(400).json({ error: 'User not found' });
+
+    if (!file) return res.status(400).json({ error: 'Image file is required' });
+
+    let image_path = null;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file.buffer, {
+        filename: file.originalname,
+        contentType: file.mimetype
+      });
+
+      const uploadResponse = await axios.post(
+        'https://file-vault-ro9o.onrender.com/upload',
+        formData,
+        {
+          headers: {
+            ...formData.getHeaders(),
+            'accept': 'application/json'
+          }
+        }
+      );
+
+      if (uploadResponse.data && uploadResponse.data.path) {
+        image_path = uploadResponse.data.path;
+      } else {
+        console.error('Unexpected upload response:', uploadResponse.data);
+        return res.status(500).json({ error: 'Failed to upload image' });
+      }
+    } catch (uploadError) {
+      console.error('File upload error:', uploadError && uploadError.response ? uploadError.response.data : uploadError);
+      return res.status(500).json({ error: 'Failed to upload image' });
+    }
+
+    const upsertQuery = `
+      INSERT INTO profile_images (user_id, image_path, created_at, updated_at)
+      VALUES ($1, $2, NOW(), NOW())
+      ON CONFLICT (user_id) DO UPDATE SET image_path = EXCLUDED.image_path, updated_at = NOW()
+      RETURNING user_id, image_path, created_at, updated_at
+    `;
+
+    const { rows } = await pool.query(upsertQuery, [user_id, image_path]);
+
+    res.json({ message: 'Profile image saved', profile: rows[0] });
+  } catch (error) {
+    console.error('uploadProfileImage error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Create or update user profile (medical/profile details)
+exports.upsertUserProfile = async (req, res) => {
+  try {
+    const {
+      user_id,
+      dob,
+      gender,
+      phone,
+      blood_group,
+      allergies,
+      chronic_conditions,
+      current_medications,
+      emergency_contact_name,
+      address
+    } = req.body;
+
+    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
+
+    // Ensure user exists
+    const { rows: userRows } = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
+    if (!userRows[0]) return res.status(400).json({ error: 'User not found' });
+
+    // Normalize JSON fields: allow passing arrays or JSON strings
+    const parseMaybeArray = (val) => {
+      if (!val) return null;
+      if (Array.isArray(val)) return val;
+      try { const p = JSON.parse(val); return Array.isArray(p) ? p : [String(val)]; } catch { return [String(val)]; }
+    };
+
+    const allergiesArr = parseMaybeArray(allergies);
+    const chronicArr = parseMaybeArray(chronic_conditions);
+    const medsArr = parseMaybeArray(current_medications);
+
+    const upsertQuery = `
+      INSERT INTO user_profiles (user_id, dob, gender, phone, blood_group, allergies, chronic_conditions, current_medications, emergency_contact_name, address, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10, NOW(), NOW())
+      ON CONFLICT (user_id) DO UPDATE SET
+        dob = EXCLUDED.dob,
+        gender = EXCLUDED.gender,
+        phone = EXCLUDED.phone,
+        blood_group = EXCLUDED.blood_group,
+        allergies = EXCLUDED.allergies,
+        chronic_conditions = EXCLUDED.chronic_conditions,
+        current_medications = EXCLUDED.current_medications,
+        emergency_contact_name = EXCLUDED.emergency_contact_name,
+        address = EXCLUDED.address,
+        updated_at = NOW()
+      RETURNING *
+    `;
+
+    const { rows } = await pool.query(upsertQuery, [
+      user_id,
+      dob || null,
+      gender || null,
+      phone || null,
+      blood_group || null,
+      allergiesArr ? JSON.stringify(allergiesArr) : null,
+      chronicArr ? JSON.stringify(chronicArr) : null,
+      medsArr ? JSON.stringify(medsArr) : null,
+      emergency_contact_name || null,
+      address || null
+    ]);
+
+    res.json({ message: 'User profile saved', profile: rows[0] });
+  } catch (error) {
+    console.error('upsertUserProfile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get user profile by user_id
+exports.getUserProfile = async (req, res) => {
+  try {
+    const userId = req.params.user_id;
+    if (!userId) return res.status(400).json({ error: 'user_id is required in path' });
+
+    const { rows } = await pool.query('SELECT * FROM user_profiles WHERE user_id = $1', [userId]);
+    if (!rows[0]) return res.status(404).json({ error: 'Profile not found' });
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('getUserProfile error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
