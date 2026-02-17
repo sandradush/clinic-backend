@@ -567,3 +567,30 @@ exports.getUserProfile = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Preview a profile image by path (forwards to file-vault preview endpoint)
+exports.previewProfileImage = async (req, res) => {
+  try {
+    const imagePath = req.query.path || req.body.path;
+    if (!imagePath) return res.status(400).json({ error: 'path query parameter is required' });
+
+    try {
+      const resp = await axios.get('https://file-vault-ro9o.onrender.com/preview', {
+        params: { path: imagePath },
+        headers: { accept: 'application/json' }
+      });
+
+      // Return preview_url if present otherwise return full response
+      if (resp.data && resp.data.preview_url) {
+        return res.json({ preview_url: resp.data.preview_url });
+      }
+      return res.json(resp.data || {});
+    } catch (err) {
+      console.error('previewProfileImage upstream error:', err && err.response ? err.response.data : err);
+      return res.status(502).json({ error: 'Failed to fetch preview from file vault' });
+    }
+  } catch (error) {
+    console.error('previewProfileImage error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

@@ -393,6 +393,36 @@ router.post('/doctors', upload.single('licence_file'), createDoctor);
  */
 router.post('/profile-image', uploadImage.single('image'), require('../controllers/authController').uploadProfileImage);
 
+/**
+ * @swagger
+ * /api/auth/profile-image/preview:
+ *   get:
+ *     summary: Get preview URL for a profile image stored in the file vault
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: path
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Path of the file as returned by the upload endpoint
+ *     responses:
+ *       200:
+ *         description: Preview URL returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 preview_url:
+ *                   type: string
+ *       400:
+ *         description: Validation error
+ *       502:
+ *         description: Upstream file vault error
+ */
+router.get('/profile-image/preview', require('../controllers/authController').previewProfileImage);
+
 // User profile endpoints (medical/profile details)
 /**
  * @swagger
