@@ -320,6 +320,65 @@ exports.getAppointmentSummary = async (req, res) => {
   }
 };
 
+// Get appointment summaries for a doctor (all appointments for doctor with associated perceptions, symptoms, medicals)
+exports.getAppointmentSummaryByDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    // Get appointments for the doctor
+    const { rows: apptRows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.doctor_id = $1
+       ORDER BY a.date DESC, a.time DESC`,
+      [doctorId]
+    );
+
+    if (!apptRows.length) return res.json([]);
+
+    // For each appointment, fetch perceptions, symptoms and medicals
+    const summaries = [];
+    for (const appt of apptRows) {
+      const apptId = appt.id;
+
+      const { rows: perceptions } = await pool.query(
+        `SELECT id, appointment_id, title, note, created_at
+         FROM perceptions
+         WHERE appointment_id = $1
+         ORDER BY created_at DESC`,
+        [apptId]
+      );
+
+      const { rows: symptoms } = await pool.query(
+        `SELECT id, appointment_id, symptom_name, value, description, created_at
+         FROM symptoms
+         WHERE appointment_id = $1
+         ORDER BY created_at DESC`,
+        [apptId]
+      );
+
+      const { rows: medicals } = await pool.query(
+        `SELECT id, appointment_id, medical_name, dosage, frequency, note, created_at
+         FROM medicals
+         WHERE appointment_id = $1
+         ORDER BY created_at DESC`,
+        [apptId]
+      );
+
+      summaries.push({ appointment: appt, perceptions, symptoms, medicals });
+    }
+
+    res.json(summaries);
+  } catch (error) {
+    console.error('Get appointment summaries by doctor error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Create appointment without doctor (doctor_id will be NULL)
 exports.createAppointmentNoDoctor = async (req, res) => {
   try {

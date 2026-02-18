@@ -185,6 +185,45 @@ router.get('/doctor/:doctorId/statistic', require('../controllers/appointmentsCo
 
 /**
  * @swagger
+ * /api/appointments/doctor/{doctorId}/summary:
+ *   get:
+ *     summary: Get appointment summaries for a specific doctor (appointment + patient + perceptions + symptoms + medicals)
+ *     tags: [Appointments]
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Array of appointment summaries for the doctor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   appointment:
+ *                     $ref: '#/components/schemas/Appointment'
+ *                   perceptions:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                   symptoms:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ *                   medicals:
+ *                     type: array
+ *                     items:
+ *                       type: object
+ */
+router.get('/doctor/:doctorId/summary', require('../controllers/appointmentsController').getAppointmentSummaryByDoctor);
+
+/**
+ * @swagger
  * /api/appointments/{id}/summary:
  *   get:
  *     summary: Get appointment summary (appointment + patient + perceptions + symptoms + medicals)
