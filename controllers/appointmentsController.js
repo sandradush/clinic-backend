@@ -471,3 +471,39 @@ exports.updateAppointmentDoctor = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+// Get patient summary: patient info + all appointments with doctor names
+exports.getPatientSummary = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    // Get patient info
+    const { rows: patientRows } = await pool.query(
+      `SELECT id, name, email, role, created_at
+       FROM users
+       WHERE id = $1`,
+      [patientId]
+    );
+
+    if (!patientRows[0]) return res.status(404).json({ error: 'Patient not found' });
+
+    const patient = patientRows[0];
+
+    // Get all appointments for the patient
+    const { rows: appointments } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.patient_id = $1
+       ORDER BY a.date DESC, a.time DESC`,
+      [patientId]
+    );
+
+    res.json({ patient, appointments });
+  } catch (error) {
+    console.error('Get patient summary error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
