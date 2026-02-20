@@ -90,11 +90,13 @@ const appointmentsRouter = require('./routes/appointments');
 const symptomsRouter = require('./routes/symptoms');
 const perceptionsRouter = require('./routes/perceptions');
 const medicalsRouter = require('./routes/medicals');
+const vitalsRouter = require('./routes/vitals');
 app.use('/api/auth', authRouter);
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/symptoms', symptomsRouter);
 app.use('/api/perceptions', perceptionsRouter);
 app.use('/api/medicals', medicalsRouter);
+app.use('/api/vitals', vitalsRouter);
 
 /**
  * @swagger
