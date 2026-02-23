@@ -57,7 +57,7 @@ exports.getPatientDeviceReadings = async (req, res) => {
     const limitRaw = req.query.limit;
     const latestRaw = req.query.latest;
     const latest = latestRaw === 'true' || latestRaw === '1';
-    let limit = 50;
+    let limit;
     if (latest) {
       limit = 1;
     } else if (limitRaw !== undefined) {
@@ -68,8 +68,7 @@ exports.getPatientDeviceReadings = async (req, res) => {
       limit = Math.min(parsedLimit, 200);
     }
 
-    const { rows } = await pool.query(
-      `SELECT pd.patient_id,
+    let queryText = `SELECT pd.patient_id,
               pd.device_serial_number,
               v.id AS vital_id,
               v.heart_rate_bpm,
@@ -79,10 +78,15 @@ exports.getPatientDeviceReadings = async (req, res) => {
        FROM patient_devices pd
        LEFT JOIN vitals v ON v.serial_number = pd.device_serial_number
        WHERE pd.patient_id = $1
-       ORDER BY v.created_at DESC NULLS LAST
-       LIMIT $2`,
-      [parsedPatientId, limit]
-    );
+       ORDER BY v.created_at DESC NULLS LAST`;
+
+    const queryParams = [parsedPatientId];
+    if (limit !== undefined) {
+      queryText += '\n       LIMIT $2';
+      queryParams.push(limit);
+    }
+
+    const { rows } = await pool.query(queryText, queryParams);
 
     if (latest) {
       return res.json(rows[0] || null);
