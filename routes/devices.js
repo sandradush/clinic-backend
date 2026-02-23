@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registerDeviceToPatient } = require('../controllers/devicesController');
+const { registerDeviceToPatient, getPatientDeviceReadings } = require('../controllers/devicesController');
 
 /**
  * @swagger
@@ -49,5 +49,52 @@ const { registerDeviceToPatient } = require('../controllers/devicesController');
  *               $ref: '#/components/schemas/DeviceRegistration'
  */
 router.post('/register', registerDeviceToPatient);
+
+/**
+ * @swagger
+ * /api/devices/patient/{patientId}/readings:
+ *   get:
+ *     summary: Retrieve vitals captured by devices registered to a patient
+ *     tags: [Devices]
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         schema:
+ *           type: integer
+ *           default: 50
+ *           maximum: 200
+ *     responses:
+ *       200:
+ *         description: Device readings retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   patient_id:
+ *                     type: integer
+ *                   device_serial_number:
+ *                     type: string
+ *                   vital_id:
+ *                     type: integer
+ *                   heart_rate_bpm:
+ *                     type: number
+ *                   spo2:
+ *                     type: number
+ *                   temperature:
+ *                     type: number
+ *                   created_at:
+ *                     type: string
+ *                     format: date-time
+ */
+router.get('/patient/:patientId/readings', getPatientDeviceReadings);
 
 module.exports = router;

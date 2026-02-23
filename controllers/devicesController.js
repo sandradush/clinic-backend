@@ -43,3 +43,46 @@ exports.registerDeviceToPatient = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// Retrieve vitals captured by devices registered to a patient
+exports.getPatientDeviceReadings = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const parsedPatientId = Number(patientId);
+
+    if (!Number.isInteger(parsedPatientId) || parsedPatientId <= 0) {
+      return res.status(400).json({ error: 'patientId must be a valid positive integer' });
+    }
+
+    const limitRaw = req.query.limit;
+    let limit = 50;
+    if (limitRaw !== undefined) {
+      const parsedLimit = Number(limitRaw);
+      if (!Number.isInteger(parsedLimit) || parsedLimit <= 0) {
+        return res.status(400).json({ error: 'limit must be a valid positive integer' });
+      }
+      limit = Math.min(parsedLimit, 200);
+    }
+
+    const { rows } = await pool.query(
+      `SELECT pd.patient_id,
+              pd.device_serial_number,
+              v.id AS vital_id,
+              v.heart_rate_bpm,
+              v.spo2,
+              v.temperature,
+              v.created_at
+       FROM patient_devices pd
+       LEFT JOIN vitals v ON v.serial_number = pd.device_serial_number
+       WHERE pd.patient_id = $1
+       ORDER BY v.created_at DESC NULLS LAST
+       LIMIT $2`,
+      [parsedPatientId, limit]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Get patient device readings error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
