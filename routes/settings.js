@@ -39,10 +39,14 @@ const { getGeneralSettings, upsertGeneralSettings } = require('../controllers/se
  *         description: General settings
  *         content:
  *           application/json:
+ *             example:
+ *               clinicName: string
+ *               defaultLanguage: English
+ *               primaryAddress: string
+ *               created_at: 2026-02-23T07:00:18.244Z
+ *               updated_at: 2026-02-23T07:00:18.244Z
  *             schema:
  *               $ref: '#/components/schemas/GeneralSettings'
- *       404:
- *         description: General settings not configured yet
  */
 router.get('/general', getGeneralSettings);
 

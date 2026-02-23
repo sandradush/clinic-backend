@@ -15,7 +15,13 @@ exports.getGeneralSettings = async (req, res) => {
     );
 
     if (!rows[0]) {
-      return res.status(404).json({ error: 'General settings not configured yet' });
+      return res.json({
+        clinicName: '',
+        defaultLanguage: 'English',
+        primaryAddress: '',
+        created_at: null,
+        updated_at: null
+      });
     }
 
     res.json(rows[0]);
