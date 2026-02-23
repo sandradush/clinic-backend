@@ -55,8 +55,12 @@ exports.getPatientDeviceReadings = async (req, res) => {
     }
 
     const limitRaw = req.query.limit;
+    const latestRaw = req.query.latest;
+    const latest = latestRaw === 'true' || latestRaw === '1';
     let limit = 50;
-    if (limitRaw !== undefined) {
+    if (latest) {
+      limit = 1;
+    } else if (limitRaw !== undefined) {
       const parsedLimit = Number(limitRaw);
       if (!Number.isInteger(parsedLimit) || parsedLimit <= 0) {
         return res.status(400).json({ error: 'limit must be a valid positive integer' });
@@ -79,6 +83,10 @@ exports.getPatientDeviceReadings = async (req, res) => {
        LIMIT $2`,
       [parsedPatientId, limit]
     );
+
+    if (latest) {
+      return res.json(rows[0] || null);
+    }
 
     res.json(rows);
   } catch (error) {
