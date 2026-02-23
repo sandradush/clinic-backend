@@ -26,6 +26,24 @@ const { registerDeviceToPatient, getPatientDeviceReadings } = require('../contro
  *         updated_at:
  *           type: string
  *           format: date-time
+ *     VitalReading:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         deviceId:
+ *           type: string
+ *         patientId:
+ *           type: integer
+ *         readingType:
+ *           type: string
+ *         value:
+ *           type: number
+ *         unit:
+ *           type: string
+ *         timestamp:
+ *           type: string
+ *           format: date-time
  */
 
 /**
@@ -62,38 +80,31 @@ router.post('/register', registerDeviceToPatient);
  *         required: true
  *         schema:
  *           type: integer
+ *         description: ID of the patient
  *       - in: query
  *         name: limit
  *         required: false
  *         schema:
  *           type: integer
- *           default: 50
- *           maximum: 200
+ *           default: 1
+ *           maximum: 100
+ *           minimum: 1
+ *         description: Number of latest readings to return (defaults to 1 - most recent)
  *     responses:
- *       200:
- *         description: Device readings retrieved
+ *       '200':
+ *         description: Successful response - returns the latest vitals readings
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   patient_id:
- *                     type: integer
- *                   device_serial_number:
- *                     type: string
- *                   vital_id:
- *                     type: integer
- *                   heart_rate_bpm:
- *                     type: number
- *                   spo2:
- *                     type: number
- *                   temperature:
- *                     type: number
- *                   created_at:
- *                     type: string
- *                     format: date-time
+ *                 $ref: '#/components/schemas/VitalReading'
+ *       '400':
+ *         description: Invalid parameters
+ *       '404':
+ *         description: Patient not found
+ *       '500':
+ *         description: Server error
  */
 router.get('/patient/:patientId/readings', getPatientDeviceReadings);
 
