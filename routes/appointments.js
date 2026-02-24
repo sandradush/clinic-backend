@@ -227,7 +227,7 @@ router.get('/doctor/:doctorId/statistic', require('../controllers/appointmentsCo
  * @swagger
  * /api/appointments/doctor/{doctorId}/summary:
  *   get:
- *     summary: Get appointment summaries for a specific doctor (appointment + patient + perceptions + symptoms + medicals)
+ *     summary: Get appointment summaries for a specific doctor (appointment + patient + prescriptions + symptoms + medicals)
  *     tags: [Appointments]
  *     parameters:
  *       - in: path
@@ -247,7 +247,7 @@ router.get('/doctor/:doctorId/statistic', require('../controllers/appointmentsCo
  *                 properties:
  *                   appointment:
  *                     $ref: '#/components/schemas/Appointment'
- *                   perceptions:
+ *                   prescriptions:
  *                     type: array
  *                     items:
  *                       type: object
@@ -266,7 +266,7 @@ router.get('/doctor/:doctorId/summary', require('../controllers/appointmentsCont
  * @swagger
  * /api/appointments/{id}/summary:
  *   get:
- *     summary: Get appointment summary (appointment + patient + perceptions + symptoms + medicals)
+ *     summary: Get appointment summary (appointment + patient + prescriptions + symptoms + medicals)
  *     tags: [Appointments]
  *     parameters:
  *       - in: path
@@ -284,7 +284,7 @@ router.get('/doctor/:doctorId/summary', require('../controllers/appointmentsCont
  *               properties:
  *                 appointment:
  *                   $ref: '#/components/schemas/Appointment'
- *                 perceptions:
+ *                 prescriptions:
  *                   type: array
  *                   items:
  *                     type: object

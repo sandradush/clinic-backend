@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { createPerception, getPerceptionsByAppointment } = require('../controllers/perceptionsController');
+const { createPrescription, getPrescriptionsByAppointment } = require('../controllers/prescriptionsController');
 
 /**
  * @swagger
  * components:
  *   schemas:
- *     Perception:
+ *     Prescription:
  *       type: object
  *       required:
  *         - appointment_id
@@ -27,32 +27,32 @@ const { createPerception, getPerceptionsByAppointment } = require('../controller
 
 /**
  * @swagger
- * /api/perceptions:
+ * /api/prescriptions:
  *   post:
- *     summary: Create a new perception for an appointment
- *     tags: [Perceptions]
+ *     summary: Create a new prescription for an appointment
+ *     tags: [Prescriptions]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Perception'
+ *             $ref: '#/components/schemas/Prescription'
  *     responses:
  *       201:
- *         description: Perception created
+ *         description: Prescription created
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Perception'
+ *               $ref: '#/components/schemas/Prescription'
  */
-router.post('/', createPerception);
+router.post('/', createPrescription);
 
 /**
  * @swagger
- * /api/perceptions/appointment/{appointmentId}:
+ * /api/prescriptions/appointment/{appointmentId}:
  *   get:
- *     summary: List perceptions for an appointment
- *     tags: [Perceptions]
+ *     summary: List prescriptions for an appointment
+ *     tags: [Prescriptions]
  *     parameters:
  *       - in: path
  *         name: appointmentId
@@ -61,14 +61,14 @@ router.post('/', createPerception);
  *           type: integer
  *     responses:
  *       200:
- *         description: List of perceptions
+ *         description: List of prescriptions
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 $ref: '#/components/schemas/Perception'
+ *                 $ref: '#/components/schemas/Prescription'
  */
-router.get('/appointment/:appointmentId', getPerceptionsByAppointment);
+router.get('/appointment/:appointmentId', getPrescriptionsByAppointment);
 
 module.exports = router;

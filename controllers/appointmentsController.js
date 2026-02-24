@@ -266,7 +266,7 @@ exports.approveAppointment = async (req, res) => {
   }
 };
 
-// Appointment summary: appointment + perceptions + symptoms + medicals
+// Appointment summary: appointment + prescriptions + symptoms + medicals
 exports.getAppointmentSummary = async (req, res) => {
   try {
     const { id } = req.params;
@@ -286,10 +286,10 @@ exports.getAppointmentSummary = async (req, res) => {
     const appointment = apptRows[0];
     if (!appointment) return res.status(404).json({ error: 'Appointment not found' });
 
-    // Perceptions
-    const { rows: perceptions } = await pool.query(
+    // Prescriptions
+    const { rows: prescriptions } = await pool.query(
       `SELECT id, appointment_id, title, note, created_at
-       FROM perceptions
+       FROM prescriptions
        WHERE appointment_id = $1
        ORDER BY created_at DESC`,
       [id]
@@ -313,14 +313,14 @@ exports.getAppointmentSummary = async (req, res) => {
       [id]
     );
 
-    res.json({ appointment, perceptions, symptoms, medicals });
+    res.json({ appointment, prescriptions, symptoms, medicals });
   } catch (error) {
     console.error('Get appointment summary error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
 
-// Get appointment summaries for a doctor (all appointments for doctor with associated perceptions, symptoms, medicals)
+// Get appointment summaries for a doctor (all appointments for doctor with associated prescriptions, symptoms, medicals)
 exports.getAppointmentSummaryByDoctor = async (req, res) => {
   try {
     const { doctorId } = req.params;
@@ -340,14 +340,14 @@ exports.getAppointmentSummaryByDoctor = async (req, res) => {
 
     if (!apptRows.length) return res.json([]);
 
-    // For each appointment, fetch perceptions, symptoms and medicals
+    // For each appointment, fetch prescriptions, symptoms and medicals
     const summaries = [];
     for (const appt of apptRows) {
       const apptId = appt.id;
 
-      const { rows: perceptions } = await pool.query(
+      const { rows: prescriptions } = await pool.query(
         `SELECT id, appointment_id, title, note, created_at
-         FROM perceptions
+         FROM prescriptions
          WHERE appointment_id = $1
          ORDER BY created_at DESC`,
         [apptId]
@@ -369,7 +369,7 @@ exports.getAppointmentSummaryByDoctor = async (req, res) => {
         [apptId]
       );
 
-      summaries.push({ appointment: appt, perceptions, symptoms, medicals });
+      summaries.push({ appointment: appt, prescriptions, symptoms, medicals });
     }
 
     res.json(summaries);
