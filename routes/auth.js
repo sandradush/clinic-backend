@@ -468,6 +468,9 @@ router.get('/profile-image/preview', require('../controllers/authController').pr
  *                 type: string
  *               address:
  *                 type: string
+ *               insurance:
+ *                 type: object
+ *                 additionalProperties: true
  *     responses:
  *       200:
  *         description: Profile saved
@@ -508,6 +511,9 @@ router.get('/profile-image/preview', require('../controllers/authController').pr
  *                       type: string
  *                     address:
  *                       type: string
+ *                     insurance:
+ *                       type: object
+ *                       additionalProperties: true
  */
 router.post('/profile', require('../controllers/authController').upsertUserProfile);
 /**

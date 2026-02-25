@@ -495,7 +495,8 @@ exports.upsertUserProfile = async (req, res) => {
       chronic_conditions,
       current_medications,
       emergency_contact_name,
-      address
+      address,
+      insurance
     } = req.body;
 
     if (!user_id) return res.status(400).json({ error: 'user_id is required' });
@@ -515,9 +516,20 @@ exports.upsertUserProfile = async (req, res) => {
     const chronicArr = parseMaybeArray(chronic_conditions);
     const medsArr = parseMaybeArray(current_medications);
 
+    const parseMaybeJson = (val) => {
+      if (!val) return null;
+      if (typeof val === 'object') return JSON.stringify(val);
+      if (typeof val === 'string') {
+        try { const p = JSON.parse(val); return JSON.stringify(p); } catch { return JSON.stringify({ raw: String(val) }); }
+      }
+      return JSON.stringify(val);
+    };
+
+    const insuranceJson = parseMaybeJson(insurance);
+
     const upsertQuery = `
-      INSERT INTO user_profiles (user_id, dob, gender, phone, blood_group, allergies, chronic_conditions, current_medications, emergency_contact_name, address, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10, NOW(), NOW())
+      INSERT INTO user_profiles (user_id, dob, gender, phone, blood_group, allergies, chronic_conditions, current_medications, emergency_contact_name, address, insurance, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9, $10, $11::jsonb, NOW(), NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         dob = EXCLUDED.dob,
         gender = EXCLUDED.gender,
@@ -528,6 +540,7 @@ exports.upsertUserProfile = async (req, res) => {
         current_medications = EXCLUDED.current_medications,
         emergency_contact_name = EXCLUDED.emergency_contact_name,
         address = EXCLUDED.address,
+        insurance = EXCLUDED.insurance,
         updated_at = NOW()
       RETURNING *
     `;
@@ -542,7 +555,8 @@ exports.upsertUserProfile = async (req, res) => {
       chronicArr ? JSON.stringify(chronicArr) : null,
       medsArr ? JSON.stringify(medsArr) : null,
       emergency_contact_name || null,
-      address || null
+      address || null,
+      insuranceJson || null
     ]);
 
     res.json({ message: 'User profile saved', profile: rows[0] });

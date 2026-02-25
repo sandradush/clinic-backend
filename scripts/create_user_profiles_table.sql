@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
   current_medications JSONB,
   emergency_contact_name VARCHAR(255),
   address TEXT,
+  insurance JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -29,4 +30,6 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 --   current_medications = EXCLUDED.current_medications,
 --   emergency_contact_name = EXCLUDED.emergency_contact_name,
 --   address = EXCLUDED.address,
+--   updated_at = NOW();
+--   insurance = EXCLUDED.insurance,
 --   updated_at = NOW();
