@@ -9,6 +9,8 @@ require('dotenv').config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_in_production';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'refresh_secret_change_this';
+const RESET_TOKEN_SECRET = process.env.RESET_TOKEN_SECRET || (process.env.JWT_SECRET || 'change_this_in_production');
+const PASSWORD_RESET_EMAIL_RATE_LIMIT = Number(process.env.PASSWORD_RESET_EMAIL_RATE_LIMIT) || 5; // per hour per email
 
 // Rate limiter for password reset only
 const passwordResetLimiter = rateLimit({
@@ -246,32 +248,61 @@ exports.logout = async (req, res) => {
 };
 
 // Forgot password
+// Rate-limited by IP via `passwordResetLimiter`. Also enforce per-email rate limit (PASSWORD_RESET_EMAIL_RATE_LIMIT per hour).
 exports.forgotPassword = [passwordResetLimiter, async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email is required' });
+    if (!email) return res.status(200).json({ ok: true, message: 'If an account with that email exists, a password reset link has been sent.' });
 
-    const { rows } = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (!rows[0]) {
-      // Don't reveal if email exists
-      return res.json({ message: 'If email exists, reset instructions have been sent' });
+    // Lookup user by email (do not reveal existence)
+    const { rows: userRows } = await pool.query('SELECT id, email FROM users WHERE email = $1', [email]);
+    const user = userRows[0];
+
+    // Always return generic response
+    const genericResponse = { ok: true, message: 'If an account with that email exists, a password reset link has been sent.' };
+
+    if (!user) {
+      return res.status(200).json(genericResponse);
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+    const userId = user.id;
 
-    await pool.query(
-      'UPDATE users SET reset_token = $1, reset_expires = $2 WHERE email = $3',
-      [resetToken, resetExpires, email]
+    // Enforce per-email rate limit: count password reset requests in last hour
+    const { rows: recentRows } = await pool.query(
+      `SELECT COUNT(*)::int AS cnt FROM password_resets WHERE user_id = $1 AND created_at > (NOW() - INTERVAL '1 hour')`,
+      [userId]
     );
 
-    // In production, send email with resetToken
-    console.log(`Password reset token for ${email}: ${resetToken}`);
+    const recentCount = recentRows[0] ? recentRows[0].cnt : 0;
+    if (recentCount >= PASSWORD_RESET_EMAIL_RATE_LIMIT) {
+      // Do not reveal; just return generic
+      return res.status(200).json(genericResponse);
+    }
 
-    res.json({ message: 'If email exists, reset instructions have been sent' });
+    // Generate secure random token (URL-safe)
+    const resetToken = crypto.randomBytes(32).toString('base64url');
+    const expiresAt = new Date(Date.now() + 3600000); // 1 hour
+
+    // Compute HMAC-SHA256 of token using server secret
+    const hmac = crypto.createHmac('sha256', RESET_TOKEN_SECRET).update(resetToken).digest('hex');
+
+    // Insert into password_resets (single-use)
+    await pool.query(
+      `INSERT INTO password_resets (user_id, token_hash, expires_at, created_at, ip_address)
+       VALUES ($1, $2, $3, NOW(), $4)`,
+      [userId, hmac, expiresAt, req.ip || null]
+    );
+
+    // Send email with reset link (console for now)
+    const resetLink = `https://your-frontend.example/reset-password?token=${encodeURIComponent(resetToken)}`;
+    console.log(`Send password reset email to ${email} with link: ${resetLink}`);
+
+    // TODO: integrate actual email provider
+
+    return res.status(200).json(genericResponse);
   } catch (error) {
     console.error('Forgot password error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(200).json({ ok: true, message: 'If an account with that email exists, a password reset link has been sent.' });
   }
 }];
 
@@ -279,32 +310,52 @@ exports.forgotPassword = [passwordResetLimiter, async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    if (!token || !password) {
-      return res.status(400).json({ error: 'Token and password are required' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters' });
+    if (!token || !password) return res.status(400).json({ ok: false, error: 'Token and password are required' });
+
+    // Basic password strength: at least 8 chars, contains letter and number
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      return res.status(400).json({ ok: false, error: 'Password must be at least 8 characters and include letters and numbers' });
     }
 
+    // Compute token HMAC
+    const tokenHash = crypto.createHmac('sha256', RESET_TOKEN_SECRET).update(String(token)).digest('hex');
+
+    // Find matching, non-expired password_reset row
     const { rows } = await pool.query(
-      'SELECT id FROM users WHERE reset_token = $1 AND reset_expires > NOW()',
-      [token]
+      `SELECT id, user_id, token_hash, expires_at FROM password_resets WHERE token_hash = $1 AND expires_at > NOW()`,
+      [tokenHash]
     );
 
-    if (!rows[0]) {
-      return res.status(400).json({ error: 'Invalid or expired reset token' });
+    if (!rows[0]) return res.status(400).json({ ok: false, error: 'Invalid or expired reset token' });
+
+    const row = rows[0];
+
+    // Constant-time compare
+    const a = Buffer.from(row.token_hash, 'hex');
+    const b = Buffer.from(tokenHash, 'hex');
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return res.status(400).json({ ok: false, error: 'Invalid or expired reset token' });
     }
 
+    // Hash new password and update user
     const password_hash = await bcrypt.hash(password, 10);
-    await pool.query(
-      'UPDATE users SET password_hash = $1, reset_token = NULL, reset_expires = NULL WHERE id = $2',
-      [password_hash, rows[0].id]
-    );
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [password_hash, row.user_id]);
 
-    res.json({ message: 'Password reset successful' });
+    // Delete the token row (single-use)
+    await pool.query('DELETE FROM password_resets WHERE id = $1', [row.id]);
+
+    // Optionally notify user via email (console)
+    const { rows: userRows } = await pool.query('SELECT email FROM users WHERE id = $1', [row.user_id]);
+    if (userRows[0]) {
+      console.log(`Password for ${userRows[0].email} was changed via reset token`);
+    }
+
+    // TODO: invalidate existing JWTs/sessions if implemented
+
+    return res.status(200).json({ ok: true, message: 'Password updated' });
   } catch (error) {
     console.error('Reset password error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ ok: false, error: 'Internal server error' });
   }
 };
 

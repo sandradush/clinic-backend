@@ -141,6 +141,8 @@ router.post('/register', register);
  *         description: Invalid credentials
  */
 router.post('/login', login);
+router.post('/forgot-password', require('../controllers/authController').forgotPassword);
+router.post('/reset-password', require('../controllers/authController').resetPassword);
 
 /**
  * @swagger
