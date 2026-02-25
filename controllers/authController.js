@@ -427,10 +427,26 @@ exports.uploadProfileImage = async (req, res) => {
     const file = req.file;
     const { user_id } = req.body;
 
-    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
+    // Allow providing `user_id` in body, or infer from Authorization Bearer token
+    let targetUserId = user_id;
+    if (!targetUserId) {
+      const authHeader = req.headers && req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.replace(/^Bearer\s+/, '');
+        try {
+          const payload = jwt.verify(token, JWT_SECRET);
+          // token payload for access tokens is the full user object (includes id)
+          if (payload && payload.id) targetUserId = payload.id;
+        } catch (err) {
+          // ignore - verification failed
+        }
+      }
+    }
+
+    if (!targetUserId) return res.status(400).json({ error: 'user_id is required either in body or via Authorization Bearer token' });
 
     // Ensure user exists
-    const { rows: userRows } = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
+    const { rows: userRows } = await pool.query('SELECT id FROM users WHERE id = $1', [targetUserId]);
     if (!userRows[0]) return res.status(400).json({ error: 'User not found' });
 
     if (!file) return res.status(400).json({ error: 'Image file is required' });
@@ -546,7 +562,7 @@ exports.upsertUserProfile = async (req, res) => {
     `;
 
     const { rows } = await pool.query(upsertQuery, [
-      user_id,
+      targetUserId,
       dob || null,
       gender || null,
       phone || null,

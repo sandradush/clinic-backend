@@ -438,8 +438,6 @@ router.get('/profile-image/preview', require('../controllers/authController').pr
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - user_id
  *             properties:
  *               user_id:
  *                 type: integer
@@ -514,6 +512,9 @@ router.get('/profile-image/preview', require('../controllers/authController').pr
  *                     insurance:
  *                       type: object
  *                       additionalProperties: true
+            properties:
+              user_id:
+                type: integer
  */
 router.post('/profile', require('../controllers/authController').upsertUserProfile);
 /**
