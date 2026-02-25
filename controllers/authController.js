@@ -71,8 +71,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// Login
-exports.login = async (req, res) => {
+// Loginexports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
@@ -566,10 +565,25 @@ exports.upsertUserProfile = async (req, res) => {
       insurance
     } = req.body;
 
-    if (!user_id) return res.status(400).json({ error: 'user_id is required' });
+    // Allow `user_id` in body or infer from Authorization Bearer token
+    let targetUserId = user_id;
+    if (!targetUserId) {
+      const authHeader = req.headers && req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.replace(/^Bearer\s+/, '');
+        try {
+          const payload = jwt.verify(token, JWT_SECRET);
+          if (payload && payload.id) targetUserId = payload.id;
+        } catch (err) {
+          // ignore verification errors and fall through to missing user_id check
+        }
+      }
+    }
+
+    if (!targetUserId) return res.status(400).json({ error: 'user_id is required either in body or via Authorization Bearer token' });
 
     // Ensure user exists
-    const { rows: userRows } = await pool.query('SELECT id FROM users WHERE id = $1', [user_id]);
+    const { rows: userRows } = await pool.query('SELECT id FROM users WHERE id = $1', [targetUserId]);
     if (!userRows[0]) return res.status(400).json({ error: 'User not found' });
 
     // Normalize JSON fields: allow passing arrays or JSON strings
