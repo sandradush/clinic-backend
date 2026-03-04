@@ -1,5 +1,39 @@
+/**
+ * @swagger
+ * /api/appointments/patient/{patientId}/stats:
+ *   get:
+ *     summary: Get appointment statistics for a patient
+ *     tags: [Appointments]
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Appointment statistics for the patient
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 total:
+ *                   type: integer
+ *                   description: Total number of appointments
+ *                 today:
+ *                   type: integer
+ *                   description: Number of today's appointments
+ *                 pending:
+ *                   type: integer
+ *                   description: Number of pending appointments
+ *                 lastAppointment:
+ *                   $ref: '#/components/schemas/Appointment'
+ */
 const express = require('express');
 const router = express.Router();
+const { getPatientAppointmentStats } = require('../controllers/appointmentsController');
+router.get('/patient/:patientId/stats', getPatientAppointmentStats);
 const {
   getAllAppointments,
   getAppointmentById,

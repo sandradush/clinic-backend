@@ -1,3 +1,50 @@
+// Get appointment statistics for a patient
+exports.getPatientAppointmentStats = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    // Total appointments
+    const { rows: totalRows } = await pool.query(
+      `SELECT COUNT(*)::int AS total FROM appointments WHERE patient_id = $1`,
+      [patientId]
+    );
+    const total = totalRows[0]?.total || 0;
+
+    // Today's appointments
+    const { rows: todayRows } = await pool.query(
+      `SELECT COUNT(*)::int AS today FROM appointments WHERE patient_id = $1 AND date = CURRENT_DATE`,
+      [patientId]
+    );
+    const today = todayRows[0]?.today || 0;
+
+    // Pending appointments
+    const { rows: pendingRows } = await pool.query(
+      `SELECT COUNT(*)::int AS pending FROM appointments WHERE patient_id = $1 AND COALESCE(status, 'pending') = 'pending'`,
+      [patientId]
+    );
+    const pending = pendingRows[0]?.pending || 0;
+
+    // Last appointment info
+    const { rows: lastRows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.patient_id = $1
+       ORDER BY a.date DESC, a.time DESC, a.created_at DESC
+       LIMIT 1`,
+      [patientId]
+    );
+    const lastAppointment = lastRows[0] || null;
+
+    res.json({ total, today, pending, lastAppointment });
+  } catch (error) {
+    console.error('Get patient appointment stats error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 const pool = require('../config/db');
 
 // Create appointment
