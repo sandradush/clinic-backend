@@ -168,38 +168,17 @@ exports.getAppointmentsByDoctor = async (req, res) => {
   try {
     const { doctorId } = req.params;
     const { rows } = await pool.query(
-      `SELECT a.id, a.date, a.time, a.description,
-              -- prefer payment status completed when present
-              COALESCE(pmt.status, a.status) AS status,
-              a.created_at,
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.created_at,
               a.patient_id, p.name AS patient_name,
-              a.doctor_id, d.name AS doctor_name,
-              pmt.id AS payment_id, pmt.status AS payment_status
+              a.doctor_id, d.name AS doctor_name
        FROM appointments a
        LEFT JOIN users p ON a.patient_id = p.id
        LEFT JOIN users d ON a.doctor_id = d.id
-       -- payments store appointment_id as 'appt_<id>' and patient_id as 'patient_<id>'
-       LEFT JOIN payments pmt ON pmt.appointment_id = ('appt_' || a.id::text)
-                                AND pmt.patient_id = ('patient_' || a.patient_id::text)
        WHERE a.doctor_id = $1
        ORDER BY a.created_at DESC`,
       [doctorId]
     );
-    // Only return appointments that have an associated payment record.
-    // If none of the appointments have payments, ask the caller to pay first.
-    const paidRows = rows.filter(r => r.payment_id !== null && r.payment_status !== null);
-    if (!paidRows.length) {
-      return res.status(400).json({ error: 'payment first' });
-    }
-
-    const mapped = paidRows.map(r => {
-      if (r.payment_status === 'completed') {
-        r.status = 'completed';
-      }
-      return r;
-    });
-
-    res.json(mapped);
+    res.json(rows);
   } catch (error) {
     console.error('Get appointments by doctor error:', error);
     res.status(500).json({ error: 'Internal server error' });
