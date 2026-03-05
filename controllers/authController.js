@@ -37,7 +37,7 @@ const generateTokens = (user) => {
 // Patient self-registration
 exports.register = async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name,role } = req.body;
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
@@ -54,7 +54,7 @@ exports.register = async (req, res) => {
     // Create user with patient role
     const { rows: userRows } = await pool.query(
       'INSERT INTO users (email, password_hash, name, role, status) VALUES ($1, $2, $3, $4, $5) RETURNING id, email, name, role, status',
-      [email, password_hash, name, 'user', 'pending']
+      [email, password_hash, name, role, 'pending']
     );
 
     // Note: patient profile table not used for auth; user created in `users` table only
