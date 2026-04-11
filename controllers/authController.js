@@ -437,7 +437,7 @@ exports.editDoctor = async (req, res) => {
     const { doctorId } = req.params;
     const { phone, speciality, national_id, status, name, email } = req.body;
 
-    const { rows: existing } = await pool.query('SELECT id, user_id FROM doctors WHERE id = $1', [doctorId]);
+    const { rows: existing } = await pool.query('SELECT id, user_id FROM doctors WHERE user_id = $1', [doctorId]);
     if (!existing[0]) return res.status(404).json({ error: 'Doctor not found' });
 
     const { rows } = await pool.query(
@@ -447,7 +447,7 @@ exports.editDoctor = async (req, res) => {
         national_id = COALESCE($3, national_id),
         status = COALESCE($4, status),
         updated_at = NOW()
-       WHERE id = $5
+       WHERE user_id = $5
        RETURNING *`,
       [phone, speciality, national_id, status, doctorId]
     );
@@ -474,12 +474,12 @@ exports.deleteDoctor = async (req, res) => {
   try {
     const { doctorId } = req.params;
 
-    const { rows: existing } = await pool.query('SELECT id, user_id FROM doctors WHERE id = $1', [doctorId]);
+    const { rows: existing } = await pool.query('SELECT id, user_id FROM doctors WHERE user_id = $1', [doctorId]);
     if (!existing[0]) return res.status(404).json({ error: 'Doctor not found' });
 
     const userId = existing[0].user_id;
 
-    await pool.query('DELETE FROM doctors WHERE id = $1', [doctorId]);
+    await pool.query('DELETE FROM doctors WHERE user_id = $1', [doctorId]);
     await pool.query('DELETE FROM users WHERE id = $1', [userId]);
 
     res.json({ message: 'Doctor deleted successfully' });

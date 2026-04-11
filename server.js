@@ -93,6 +93,8 @@ const medicalsRouter = require('./routes/medicals');
 const vitalsRouter = require('./routes/vitals');
 const devicesRouter = require('./routes/devices');
 const clinicsRouter = require('./routes/clinics');
+const callsRouter = require('./routes/calls');
+const chatRouter = require('./routes/chat');
 app.use('/api/auth', authRouter);
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/symptoms', symptomsRouter);
@@ -101,6 +103,8 @@ app.use('/api/medicals', medicalsRouter);
 app.use('/api/vitals', vitalsRouter);
 app.use('/api/devices', devicesRouter);
 app.use('/api/clinics', clinicsRouter);
+app.use('/api/calls', callsRouter);
+app.use('/api/chat', chatRouter);
 
 /**
  * @swagger

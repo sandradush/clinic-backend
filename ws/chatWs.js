@@ -46,3 +46,4 @@ function setupChatWs(wss) {
 }
 
 module.exports = setupChatWs;
+module.exports.clients = clients;
