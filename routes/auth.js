@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const router = express.Router();
-const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus, getPendingDoctors, getApprovedDoctors, getDashboardSummary } = require('../controllers/authController');
+const { register, login, getDoctors, getPatients, createDoctor, updateDoctorStatus, getPendingDoctors, getApprovedDoctors, getDashboardSummary, editDoctor, deleteDoctor } = require('../controllers/authController');
 
 // Configure multer for file uploads
 const upload = multer({
@@ -621,5 +621,64 @@ router.get('/profile/:user_id', require('../controllers/authController').getUser
  *         description: Doctor not found
  */
 router.patch('/doctors/:id/status', updateDoctorStatus);
+
+/**
+ * @swagger
+ * /api/auth/doctors/{doctorId}:
+ *   put:
+ *     summary: Edit a doctor by doctorId
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               phone:
+ *                 type: string
+ *               speciality:
+ *                 type: string
+ *               national_id:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Doctor updated successfully
+ *       404:
+ *         description: Doctor not found
+ */
+router.put('/doctors/:doctorId', editDoctor);
+
+/**
+ * @swagger
+ * /api/auth/doctors/{doctorId}:
+ *   delete:
+ *     summary: Hard delete a doctor by doctorId (removes doctor and associated user)
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Doctor deleted successfully
+ *       404:
+ *         description: Doctor not found
+ */
+router.delete('/doctors/:doctorId', deleteDoctor);
 
 module.exports = router;

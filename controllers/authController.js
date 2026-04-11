@@ -431,6 +431,64 @@ exports.createDoctor = async (req, res) => {
   }
 };
 
+// Edit doctor by doctorId (updates doctors table + users name/email)
+exports.editDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const { phone, speciality, national_id, status, name, email } = req.body;
+
+    const { rows: existing } = await pool.query('SELECT id, user_id FROM doctors WHERE id = $1', [doctorId]);
+    if (!existing[0]) return res.status(404).json({ error: 'Doctor not found' });
+
+    const { rows } = await pool.query(
+      `UPDATE doctors SET
+        phone = COALESCE($1, phone),
+        speciality = COALESCE($2, speciality),
+        national_id = COALESCE($3, national_id),
+        status = COALESCE($4, status),
+        updated_at = NOW()
+       WHERE id = $5
+       RETURNING *`,
+      [phone, speciality, national_id, status, doctorId]
+    );
+
+    if (name || email) {
+      await pool.query(
+        `UPDATE users SET
+          name = COALESCE($1, name),
+          email = COALESCE($2, email)
+         WHERE id = $3`,
+        [name || null, email || null, existing[0].user_id]
+      );
+    }
+
+    res.json({ message: 'Doctor updated successfully', doctor: rows[0] });
+  } catch (error) {
+    console.error('editDoctor error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Hard delete doctor by doctorId (removes doctors row + associated user)
+exports.deleteDoctor = async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    const { rows: existing } = await pool.query('SELECT id, user_id FROM doctors WHERE id = $1', [doctorId]);
+    if (!existing[0]) return res.status(404).json({ error: 'Doctor not found' });
+
+    const userId = existing[0].user_id;
+
+    await pool.query('DELETE FROM doctors WHERE id = $1', [doctorId]);
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+
+    res.json({ message: 'Doctor deleted successfully' });
+  } catch (error) {
+    console.error('deleteDoctor error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Update doctor status by doctor id
 exports.updateDoctorStatus = async (req, res) => {
   try {

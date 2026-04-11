@@ -20,7 +20,8 @@
     "multer": "^2.0.2",
     "pg": "^8.11.3",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.0"
+    "swagger-ui-express": "^5.0.0",
+    "ws": "^8.20.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
