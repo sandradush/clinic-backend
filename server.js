@@ -95,6 +95,10 @@ const devicesRouter = require('./routes/devices');
 const clinicsRouter = require('./routes/clinics');
 const callsRouter = require('./routes/calls');
 const chatRouter = require('./routes/chat');
+const medicalRecordsRouter = require('./routes/medicalRecords');
+const doctorsRouter = require('./routes/doctors');
+const doctorRequestsRouter = require('./routes/doctorRequests');
+const uploadRouter = require('./routes/upload');
 app.use('/api/auth', authRouter);
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/symptoms', symptomsRouter);
@@ -105,6 +109,11 @@ app.use('/api/devices', devicesRouter);
 app.use('/api/clinics', clinicsRouter);
 app.use('/api/calls', callsRouter);
 app.use('/api/chat', chatRouter);
+app.use('/api/medical-records', medicalRecordsRouter);
+app.use('/api/doctors', doctorsRouter);
+app.use('/api/doctor-requests', doctorRequestsRouter);
+app.use('/api/upload', uploadRouter);
+app.use('/uploads', express.static('uploads'));
 
 /**
  * @swagger
