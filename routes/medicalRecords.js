@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getAllRecords, createRecord, getRecordById, updateRecord, deleteRecord } = require('../controllers/medicalRecordsController');
+const { getAllRecords, createRecord, getPatientRecords, updateRecord, deleteRecord } = require('../controllers/medicalRecordsController');
 
 /**
  * @swagger
@@ -22,6 +22,10 @@ const { getAllRecords, createRecord, getRecordById, updateRecord, deleteRecord }
  *                     type: integer
  *                   consultation_id:
  *                     type: integer
+ *                   patient_id:
+ *                     type: integer
+ *                   patient_name:
+ *                     type: string
  *                   file_url:
  *                     type: string
  *                   description:
@@ -43,9 +47,12 @@ router.get('/', getAllRecords);
  *             type: object
  *             required:
  *               - consultation_id
+ *               - patient_id
  *               - file_url
  *             properties:
  *               consultation_id:
+ *                 type: integer
+ *               patient_id:
  *                 type: integer
  *               file_url:
  *                 type: string
@@ -59,23 +66,49 @@ router.post('/', createRecord);
 
 /**
  * @swagger
- * /api/medical-records/{record_id}:
+ * /api/medical-records/patient/{patient_id}:
  *   get:
- *     summary: Get a single medical record by record_id
+ *     summary: Get all medical records for a patient (written by doctor)
  *     tags: [Medical Records]
  *     parameters:
  *       - in: path
- *         name: record_id
+ *         name: patient_id
  *         required: true
  *         schema:
  *           type: integer
  *     responses:
  *       200:
- *         description: Medical record found
- *       404:
- *         description: Medical record not found
+ *         description: List of patient medical records with doctor and appointment info
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   record_id:
+ *                     type: integer
+ *                   consultation_id:
+ *                     type: integer
+ *                   file_url:
+ *                     type: string
+ *                   description:
+ *                     type: string
+ *                   appointment_date:
+ *                     type: string
+ *                     format: date
+ *                   appointment_time:
+ *                     type: string
+ *                   patient_id:
+ *                     type: integer
+ *                   patient_name:
+ *                     type: string
+ *                   doctor_id:
+ *                     type: integer
+ *                   doctor_name:
+ *                     type: string
  */
-router.get('/:record_id', getRecordById);
+router.get('/patient/:patient_id', getPatientRecords);
 
 /**
  * @swagger
@@ -97,6 +130,8 @@ router.get('/:record_id', getRecordById);
  *             type: object
  *             properties:
  *               consultation_id:
+ *                 type: integer
+ *               patient_id:
  *                 type: integer
  *               file_url:
  *                 type: string
