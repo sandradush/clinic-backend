@@ -42,6 +42,7 @@ const {
   getAppointmentsByPatient,
   getAppointmentsByDoctor,
   updateAppointmentStatus,
+  updateAppointment,
   approveAppointment,
   getDoctorStatistics
 } = require('../controllers/appointmentsController');
@@ -98,6 +99,7 @@ const { getApprovedAppointments, getPendingAppointments } = require('../controll
  *         description: List of all appointments
  */
 router.get('/', getAllAppointments);
+router.get('/all', getAllAppointments);
 
 /**
  * @swagger
@@ -507,6 +509,41 @@ router.patch('/:id/doctor', updateAppointmentDoctor);
  *       500:
  *         description: Internal server error
  */
+/**
+ * @swagger
+ * /api/appointments/{id}:
+ *   patch:
+ *     summary: Update appointment fields (status, summary, payment_status, etc.)
+ *     tags: [Appointments]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               status:
+ *                 type: string
+ *               summary:
+ *                 type: string
+ *               payment_status:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Updated appointment
+ *       404:
+ *         description: Appointment not found
+ */
+router.patch('/:id', require('../controllers/appointmentsController').updateAppointment);
+
 router.patch('/:id/approve', require('../controllers/appointmentsController').approveAppointment);
 
 module.exports = router;

@@ -66,13 +66,13 @@ router.post('/', createRecord);
 
 /**
  * @swagger
- * /api/medical-records/patient/{patient_id}:
+ * /api/medical-records/patient/{user_id}:
  *   get:
  *     summary: Get all medical records for a patient (written by doctor)
  *     tags: [Medical Records]
  *     parameters:
  *       - in: path
- *         name: patient_id
+ *         name: user_id
  *         required: true
  *         schema:
  *           type: integer
@@ -90,6 +90,8 @@ router.post('/', createRecord);
  *                     type: integer
  *                   consultation_id:
  *                     type: integer
+ *                   patient_id:
+ *                     type: integer
  *                   file_url:
  *                     type: string
  *                   description:
@@ -99,8 +101,6 @@ router.post('/', createRecord);
  *                     format: date
  *                   appointment_time:
  *                     type: string
- *                   patient_id:
- *                     type: integer
  *                   patient_name:
  *                     type: string
  *                   doctor_id:
@@ -108,7 +108,7 @@ router.post('/', createRecord);
  *                   doctor_name:
  *                     type: string
  */
-router.get('/patient/:patient_id', getPatientRecords);
+router.get('/patient/:user_id', getPatientRecords);
 
 /**
  * @swagger

@@ -35,7 +35,7 @@ exports.createRecord = async (req, res) => {
 
 exports.getPatientRecords = async (req, res) => {
   try {
-    const { patient_id } = req.params;
+    const { user_id } = req.params;
     const { rows } = await pool.query(
       `SELECT mr.record_id, mr.consultation_id, mr.patient_id, mr.file_url, mr.description,
               p.name AS patient_name,
@@ -47,7 +47,7 @@ exports.getPatientRecords = async (req, res) => {
        LEFT JOIN users d ON a.doctor_id = d.id
        WHERE mr.patient_id = $1
        ORDER BY mr.record_id DESC`,
-      [patient_id]
+      [user_id]
     );
     res.json(rows);
   } catch (error) {

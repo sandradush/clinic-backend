@@ -87,5 +87,6 @@ router.post('/send', sendMessage);
  *                     format: date-time
  */
 router.get('/history', getChatHistory);
+router.get('/history/:patient_id', getChatHistory);
 
 module.exports = router;

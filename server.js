@@ -1,9 +1,12 @@
 require('dotenv').config();
+const http = require('http');
+const { WebSocketServer } = require('ws');
 const express = require('express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const cors = require('cors');
 const pool = require('./config/db');
+const setupChatWs = require('./ws/chatWs');
 
 const app = express();
 
@@ -27,6 +30,14 @@ app.use(cors({ origin: true, credentials: true }));
 // Enable pre-flight for all routes
 app.options('*', cors({ origin: true, credentials: true }));
 app.use(express.json());
+
+// Handle malformed JSON
+app.use((err, req, res, next) => {
+  if (err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Invalid JSON in request body' });
+  }
+  next(err);
+});
 
 // Swagger configuration
 // Allow setting hosted URL(s) via env var `SERVER_URLS` or single `SERVER_URL`.
@@ -99,6 +110,8 @@ const medicalRecordsRouter = require('./routes/medicalRecords');
 const doctorsRouter = require('./routes/doctors');
 const doctorRequestsRouter = require('./routes/doctorRequests');
 const uploadRouter = require('./routes/upload');
+const notificationsRouter = require('./routes/notifications');
+const paymentsRouter = require('./routes/payments');
 app.use('/api/auth', authRouter);
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/symptoms', symptomsRouter);
@@ -113,6 +126,9 @@ app.use('/api/medical-records', medicalRecordsRouter);
 app.use('/api/doctors', doctorsRouter);
 app.use('/api/doctor-requests', doctorRequestsRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/users', (req, res, next) => { req.url = '/users' + req.url; notificationsRouter(req, res, next); });
+app.use('/api/payments', paymentsRouter);
 app.use('/uploads', express.static('uploads'));
 
 /**
@@ -154,7 +170,23 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-app.listen(PORT, HOST, () => {
+const server = http.createServer(app);
+
+// WebSocket: /ws/chat/:channelId  (channelId is used as the userId key)
+const chatWss = new WebSocketServer({ noServer: true });
+setupChatWs(chatWss);
+
+server.on('upgrade', (req, socket, head) => {
+  if (req.url && req.url.startsWith('/ws/chat/')) {
+    chatWss.handleUpgrade(req, socket, head, (ws) => {
+      chatWss.emit('connection', ws, req);
+    });
+  } else {
+    socket.destroy();
+  }
+});
+
+server.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
   console.log(`Swagger UI available at http://${HOST}:${PORT}/api-docs`);
 });

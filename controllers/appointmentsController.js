@@ -283,6 +283,58 @@ exports.updateAppointmentStatus = async (req, res) => {
   }
 };
 
+// Update appointment (general update for any fields)
+exports.updateAppointment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+    
+    // Build dynamic update query
+    const allowedFields = ['status', 'summary', 'payment_status', 'description', 'doctor_id'];
+    const updateFields = [];
+    const values = [];
+    let paramCount = 1;
+    
+    for (const [key, value] of Object.entries(updates)) {
+      if (allowedFields.includes(key) && value !== undefined) {
+        updateFields.push(`${key} = $${paramCount}`);
+        values.push(value);
+        paramCount++;
+      }
+    }
+    
+    if (updateFields.length === 0) {
+      return res.status(400).json({ error: 'No valid fields to update' });
+    }
+    
+    values.push(id); // Add id as last parameter
+    
+    const { rows: updateRows } = await pool.query(
+      `UPDATE appointments SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING id`,
+      values
+    );
+    
+    if (!updateRows[0]) return res.status(404).json({ error: 'Appointment not found' });
+    
+    // Return updated appointment
+    const { rows } = await pool.query(
+      `SELECT a.id, a.date, a.time, a.description, a.status, a.summary, a.payment_status, a.created_at,
+              a.patient_id, p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
+       FROM appointments a
+       LEFT JOIN users p ON a.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
+       WHERE a.id = $1`,
+      [id]
+    );
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Update appointment error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Approve an appointment (sets status = 'approved')
 exports.approveAppointment = async (req, res) => {
   try {
