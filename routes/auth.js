@@ -361,7 +361,12 @@ router.get('/dashboard', getDashboardSummary);
  *       500:
  *         description: File upload or server error
  */
-router.post('/doctors', upload.single('licence_file'), createDoctor);
+router.post('/doctors', (req, res, next) => {
+  upload.single('licence_file')(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, createDoctor);
 
 /**
  * @swagger

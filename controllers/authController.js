@@ -598,7 +598,7 @@ exports.uploadProfileImage = async (req, res) => {
       RETURNING user_id, image_path, created_at, updated_at
     `;
 
-    const { rows } = await pool.query(upsertQuery, [user_id, image_path]);
+    const { rows } = await pool.query(upsertQuery, [targetUserId, image_path]);
 
     res.json({ message: 'Profile image saved', profile: rows[0] });
   } catch (error) {
