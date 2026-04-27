@@ -4,9 +4,12 @@ exports.getAllRecords = async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT mr.record_id, mr.consultation_id, mr.patient_id, mr.file_url, mr.description,
-              p.name AS patient_name
+              p.name AS patient_name,
+              a.doctor_id, d.name AS doctor_name
        FROM medical_records mr
+       LEFT JOIN appointments a ON mr.consultation_id = a.id
        LEFT JOIN users p ON mr.patient_id = p.id
+       LEFT JOIN users d ON a.doctor_id = d.id
        ORDER BY mr.record_id ASC`
     );
     res.json(rows);

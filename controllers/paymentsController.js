@@ -1,6 +1,7 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const getStripe = () => require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 exports.createPaymentIntent = async (req, res) => {
+  const stripe = getStripe();
   const { amount, currency, patient_id, appointment_id } = req.body;
   if (!amount || !patient_id || !appointment_id) {
     return res.status(400).json({ error: 'amount, patient_id and appointment_id are required' });
@@ -25,6 +26,7 @@ exports.createPaymentIntent = async (req, res) => {
 };
 
 exports.getAllPayments = async (req, res) => {
+  const stripe = getStripe();
   try {
     const paymentIntents = await stripe.paymentIntents.list({ limit: 100 });
 

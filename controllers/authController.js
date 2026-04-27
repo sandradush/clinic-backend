@@ -424,7 +424,11 @@ exports.createDoctor = async (req, res) => {
       'pending'
     ]);
 
-    res.status(201).json({ message: 'Doctor profile created', doctor: rows[0] });
+    res.status(201).json({
+      message: 'Doctor profile created. Please wait for admin approval before logging in.',
+      doctor: rows[0],
+      requiresApproval: true
+    });
   } catch (error) {
     console.error('Create doctor error:', error);
     res.status(500).json({ error: 'Internal server error' });
