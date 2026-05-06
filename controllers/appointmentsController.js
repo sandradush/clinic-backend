@@ -46,6 +46,7 @@ exports.getPatientAppointmentStats = async (req, res) => {
   }
 };
 const pool = require('../config/db');
+const { notifyAdminNewAppointment, notifyDoctorAssigned, notifyPatientApproved, notifyPatientRejected } = require('../services/emailService');
 
 // Create appointment
 exports.createAppointment = async (req, res) => {
@@ -75,7 +76,11 @@ exports.createAppointment = async (req, res) => {
       [newId]
     );
 
-    res.status(201).json(rows[0]);
+    const appt = rows[0];
+    const { rows: adminRows } = await pool.query(`SELECT email FROM users WHERE role = 'admin' LIMIT 1`);
+    if (adminRows[0]) notifyAdminNewAppointment(adminRows[0].email, appt.patient_name);
+
+    res.status(201).json(appt);
   } catch (error) {
     console.error('Create appointment error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -276,7 +281,14 @@ exports.updateAppointmentStatus = async (req, res) => {
       [id]
     );
 
-    res.json(rows[0]);
+    const appt = rows[0];
+    const { rows: patientRows } = await pool.query(`SELECT email FROM users WHERE id = $1`, [appt.patient_id]);
+    if (patientRows[0]) {
+      if (status === 'approved') notifyPatientApproved(patientRows[0].email);
+      else if (status === 'rejected') notifyPatientRejected(patientRows[0].email);
+    }
+
+    res.json(appt);
   } catch (error) {
     console.error('Update appointment status error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -358,7 +370,11 @@ exports.approveAppointment = async (req, res) => {
       [id]
     );
 
-    res.json(rows[0]);
+    const appt = rows[0];
+    const { rows: patientRows } = await pool.query(`SELECT email FROM users WHERE id = $1`, [appt.patient_id]);
+    if (patientRows[0]) notifyPatientApproved(patientRows[0].email);
+
+    res.json(appt);
   } catch (error) {
     console.error('Approve appointment error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -507,7 +523,11 @@ exports.createAppointmentNoDoctor = async (req, res) => {
       [newId]
     );
 
-    res.status(201).json(rows[0]);
+    const appt = rows[0];
+    const { rows: adminRows } = await pool.query(`SELECT email FROM users WHERE role = 'admin' LIMIT 1`);
+    if (adminRows[0]) notifyAdminNewAppointment(adminRows[0].email, appt.patient_name);
+
+    res.status(201).json(appt);
   } catch (error) {
     console.error('Create appointment (no doctor) error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -564,7 +584,11 @@ exports.updateAppointmentDoctor = async (req, res) => {
       [id]
     );
 
-    res.json(rows[0]);
+    const appt = rows[0];
+    const { rows: doctorRows } = await pool.query(`SELECT email FROM users WHERE id = $1`, [doctor_id]);
+    if (doctorRows[0]) notifyDoctorAssigned(doctorRows[0].email);
+
+    res.json(appt);
   } catch (error) {
     console.error('Update appointment doctor error:', error);
     res.status(500).json({ error: 'Internal server error' });

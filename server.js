@@ -1,3 +1,6 @@
+const cron = require('node-cron');
+const { notifyPatientReminder } = require('./services/emailService');
+
 require('dotenv').config();
 const http = require('http');
 const { WebSocketServer } = require('ws');
@@ -112,6 +115,7 @@ const doctorRequestsRouter = require('./routes/doctorRequests');
 const uploadRouter = require('./routes/upload');
 const notificationsRouter = require('./routes/notifications');
 const paymentsRouter = require('./routes/payments');
+const usersRouter = require('./routes/users');
 app.use('/api/auth', authRouter);
 app.use('/api/appointments', appointmentsRouter);
 app.use('/api/symptoms', symptomsRouter);
@@ -127,8 +131,8 @@ app.use('/api/doctors', doctorsRouter);
 app.use('/api/doctor-requests', doctorRequestsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/notifications', notificationsRouter);
-app.use('/api/users', (req, res, next) => { req.url = '/users' + req.url; notificationsRouter(req, res, next); });
 app.use('/api/payments', paymentsRouter);
+app.use('/api/users', usersRouter);
 app.use('/uploads', express.static('uploads'));
 
 /**
@@ -189,4 +193,19 @@ server.on('upgrade', (req, socket, head) => {
 server.listen(PORT, HOST, () => {
   console.log(`Server running on http://${HOST}:${PORT}`);
   console.log(`Swagger UI available at http://${HOST}:${PORT}/api-docs`);
+});
+
+// Daily reminder: runs at 9 AM — emails patients with appointments tomorrow
+cron.schedule('0 9 * * *', async () => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT u.email FROM appointments a
+       JOIN users u ON a.patient_id = u.id
+       WHERE a.date = CURRENT_DATE + INTERVAL '1 day'
+         AND a.status = 'approved'`
+    );
+    rows.forEach(r => notifyPatientReminder(r.email));
+  } catch (err) {
+    console.error('Reminder cron error:', err);
+  }
 });
